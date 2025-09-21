@@ -1,0 +1,925 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CommunicAI - AI沟通教练</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .app-container {
+            max-width: 400px;
+            width: 100%;
+            background: #fff;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            padding: 20px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+
+        .user-info h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .confidence-bar {
+            margin-top: 5px;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-bar div {
+            width: 75%;
+            height: 100%;
+            background: #ff9500;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .card i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #007bff;
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .card.academic { background: linear-gradient(135deg, #e6f0ff, #d1e3ff); }
+        .card.interview { background: linear-gradient(135deg, #fff4e6, #ffe6cc); }
+        .card.cross-culture { background: linear-gradient(135deg, #e6fff0, #ccffe6); }
+        .card.practice { background: linear-gradient(135deg, #f0e6ff, #e6ccff); }
+
+        /* 报告页样式 */
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score {
+            font-size: 2rem;
+            color: #ff9500;
+            font-weight: bold;
+        }
+
+        .level {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .radar-chart {
+            margin-bottom: 20px;
+        }
+
+        .analysis-section {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .analysis-section h4 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #007bff;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+        }
+
+        /* AI角色配置页 - 完善场景选择 */
+        .scene-selector {
+            display: flex;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+        }
+
+        .scene-tag {
+            padding: 8px 15px;
+            background: #e6f0ff;
+            border-radius: 20px;
+            margin-right: 10px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.3s;
+        }
+
+        .scene-tag.active {
+            background: #007bff;
+            color: #fff;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .role-card {
+            background: #fff;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .role-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .role-card.selected {
+            border: 2px solid #007bff;
+        }
+
+        .role-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        .role-name {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .role-desc {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .role-difficulty {
+            font-size: 0.8rem;
+            color: #ff9500;
+        }
+
+        .start-btn {
+            margin-top: 20px;
+            padding: 15px;
+            background: #ff9500;
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            cursor: pointer;
+            display: none; /* 初始隐藏，直到选择角色 */
+        }
+
+        .start-btn.active {
+            display: block;
+        }
+
+        /* 对话界面 - 录音功能和状态机 */
+        .chat-header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .status-bar {
+            background: #f9f9f9;
+            padding: 8px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #007bff;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        .status-bar.show {
+            display: block;
+        }
+
+        .record-btn {
+            background: #ff9500;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-left: 10px;
+            display: inline-block;
+        }
+
+        .record-btn.recording {
+            background: #dc3545;
+        }
+
+        .chat-container {
+            height: 300px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+        }
+
+        .ai-message {
+            background: #e6f0ff;
+            align-self: flex-start;
+        }
+
+        .user-message {
+            background: #ffe6cc;
+            align-self: flex-end;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px 0 0 20px;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: #007bff;
+            color: #fff;
+            border-radius: 0 20px 20px 0;
+            cursor: pointer;
+        }
+
+        .offline-notice {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        /* 讲稿实验室 */
+        .script-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .analyze-btn {
+            padding: 15px;
+            background: #007bff;
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .analysis-result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        /* 成长档案 */
+        .line-chart {
+            margin-bottom: 20px;
+        }
+
+        .history-list {
+            list-style: none;
+        }
+
+        .history-item {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+        }
+
+        /* 响应式 */
+        @media (max-width: 400px) {
+            .app-container {
+                border-radius: 0;
+            }
+        }
+
+        /* 加载动画 */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007bff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 首页 -->
+        <div id="home" class="page active">
+            <div class="header">
+                <img src="https://via.placeholder.com/40" alt="User Avatar" class="avatar">
+                <div class="user-info">
+                    <h2>欢迎，Z世代沟通者</h2>
+                    <p>自信度指数</p>
+                    <div class="confidence-bar">
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="card academic" onclick="navigateTo('script-lab')">
+                    <i class="fas fa-book-open"></i>
+                    <h3>讲稿实验室</h3>
+                </div>
+                <div class="card interview" onclick="navigateTo('role-config')">
+                    <i class="fas fa-briefcase"></i>
+                    <h3>AI角色训练营</h3>
+                </div>
+                <div class="card cross-culture" onclick="navigateTo('report')">
+                    <i class="fas fa-globe"></i>
+                    <h3>复盘中心</h3>
+                </div>
+                <div class="card practice" onclick="navigateTo('archive')">
+                    <i class="fas fa-microphone"></i>
+                    <h3>成长档案</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 沟通能力诊断报告页 -->
+        <div id="report" class="page">
+            <div id="report-content">
+                <div class="report-header">
+                    <h2>沟通能力诊断报告</h2>
+                    <p class="score">85/100</p>
+                    <p class="level">优秀水平</p>
+                </div>
+                <div class="radar-chart">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="analysis-section">
+                    <h4>优势分析</h4>
+                    <p>语言表达丰富，逻辑清晰。</p>
+                </div>
+                <div class="analysis-section">
+                    <h4>待改进点</h4>
+                    <p>减少口语化词汇使用。</p>
+                </div>
+                <div class="analysis-section">
+                    <h4>优化建议</h4>
+                    <p>替换“然后”为“因此”。</p>
+                </div>
+            </div>
+            <div class="buttons">
+                <div class="btn" onclick="savePDF()">保存PDF</div>
+                <div class="btn" onclick="shareAchievement()">分享成就</div>
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- AI角色训练配置页 - 完善场景选择 -->
+        <div id="role-config" class="page">
+            <h2>选择训练场景</h2>
+            <div class="scene-selector">
+                <div class="scene-tag active" data-scene="研究生复试面试">研究生复试面试</div>
+                <div class="scene-tag" data-scene="压力面试">压力面试</div>
+                <div class="scene-tag" data-scene="社团竞选">社团竞选</div>
+                <div class="scene-tag" data-scene="跨文化交流">跨文化交流</div>
+                <div class="scene-tag" data-scene="学术汇报">学术汇报</div>
+                <div class="scene-tag" data-scene="求职面试">求职面试</div>
+            </div>
+            <h2>选择AI角色</h2>
+            <div class="role-grid">
+                <div class="role-card" data-role="严厉教授" onclick="selectRole(this)">
+                    <img src="https://via.placeholder.com/60?text=教授" alt="严厉教授" class="role-avatar">
+                    <p class="role-name">严厉教授</p>
+                    <p class="role-desc">模拟深度追问，挑战知识盲区</p>
+                    <p class="role-difficulty">难度：高</p>
+                </div>
+                <div class="role-card" data-role="友善学长" onclick="selectRole(this)">
+                    <img src="https://via.placeholder.com/60?text=学长" alt="友善学长" class="role-avatar">
+                    <p class="role-name">友善学长</p>
+                    <p class="role-desc">提供鼓励性指导</p>
+                    <p class="role-difficulty">难度：中</p>
+                </div>
+                <div class="role-card" data-role="专业HR" onclick="selectRole(this)">
+                    <img src="https://via.placeholder.com/60?text=HR" alt="专业HR" class="role-avatar">
+                    <p class="role-name">专业HR</p>
+                    <p class="role-desc">求职面试模拟</p>
+                    <p class="role-difficulty">难度：高</p>
+                </div>
+                <div class="role-card" data-role="国际友人" onclick="selectRole(this)">
+                    <img src="https://via.placeholder.com/60?text=友人" alt="国际友人" class="role-avatar">
+                    <p class="role-name">国际友人</p>
+                    <p class="role-desc">跨文化交流</p>
+                    <p class="role-difficulty">难度：中</p>
+                </div>
+            </div>
+            <div class="start-btn" id="start-dialog" onclick="startDialog()">开始对话</div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- 对话界面 (AI角色训练营) -->
+        <div id="chat" class="page">
+            <h2 id="chat-title">AI对话练习</h2>
+            <div class="offline-notice" id="offline-notice">网络连接缓慢，已切换至文本模式</div>
+            <div class="status-bar" id="status-bar"></div>
+            <div class="chat-container" id="chat-messages">
+                <div class="message ai-message">欢迎开始训练！请介绍一下自己。</div>
+            </div>
+            <div class="input-area">
+                <button class="record-btn" id="record-btn" onclick="toggleRecording()" title="录音"><i class="fas fa-microphone"></i></button>
+                <input type="text" id="user-input" class="text-input" placeholder="输入你的回复...">
+                <div class="send-btn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></div>
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="endTraining()">结束训练，查看复盘</div>
+            <div class="btn" style="margin-top: 10px;" onclick="navigateTo('role-config')">返回配置</div>
+        </div>
+
+        <!-- 讲稿实验室 -->
+        <div id="script-lab" class="page">
+            <h2>讲稿实验室</h2>
+            <textarea class="script-textarea" id="script-input" placeholder="输入或粘贴你的讲稿..."></textarea>
+            <div class="analyze-btn" onclick="analyzeScript()">分析并优化</div>
+            <div class="analysis-result" id="analysis-output">
+                <!-- 结果将在这里显示 -->
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- 个人成长档案中心 -->
+        <div id="archive" class="page">
+            <h2>成长档案</h2>
+            <div class="line-chart">
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="radar-chart">
+                <canvas id="archiveRadarChart"></canvas>
+            </div>
+            <h4>历史训练记录</h4>
+            <ul class="history-list">
+                <li class="history-item">2025-09-20: 论文答辩 - 得分: 80</li>
+                <li class="history-item">2025-09-19: 压力面试 - 得分: 75</li>
+            </ul>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentScene = '研究生复试面试';
+        let currentRole = '';
+        let selectedRoleCard = null;
+        let recognition = null;
+        let isRecording = false;
+        let chatHistory = [];
+
+        // 状态机实现
+        const states = {
+            idle: { enter: () => updateStatus(''), show: false },
+            recording: { enter: () => updateStatus('录音中... <span class="loading"></span>'), show: true },
+            recognizing: { enter: () => updateStatus('识别中... <span class="loading"></span>'), show: true },
+            thinking: { enter: () => updateStatus('AI思考中... <span class="loading"></span>'), show: true },
+            playing: { enter: () => updateStatus('播放中...'), show: true }
+        };
+
+        let currentState = 'idle';
+        function transitionTo(newState) {
+            if (states[currentState]) states[currentState].enter();
+            currentState = newState;
+            if (states[newState]) states[newState].enter();
+        }
+
+        function updateStatus(html) {
+            const statusBar = document.getElementById('status-bar');
+            statusBar.innerHTML = html;
+            if (html) {
+                statusBar.classList.add('show');
+            } else {
+                statusBar.classList.remove('show');
+            }
+        }
+
+        // 网络状态监听和优雅降级
+        function checkNetwork() {
+            const notice = document.getElementById('offline-notice');
+            const recordBtn = document.getElementById('record-btn');
+            if (!navigator.onLine) {
+                notice.style.display = 'block';
+                recordBtn.style.display = 'none';
+                transitionTo('idle');
+            } else {
+                notice.style.display = 'none';
+                if (SpeechRecognition || window.webkitSpeechRecognition) {
+                    recordBtn.style.display = 'inline-block';
+                }
+            }
+        }
+
+        window.addEventListener('online', checkNetwork);
+        window.addEventListener('offline', checkNetwork);
+
+        // 初始化语音识别
+        function initRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'zh-CN';
+                recognition.interimResults = false;
+                recognition.maxAlternatives = 1;
+
+                recognition.onstart = () => {
+                    transitionTo('recording');
+                    isRecording = true;
+                    document.getElementById('record-btn').classList.add('recording');
+                };
+
+                recognition.onresult = (event) => {
+                    transitionTo('recognizing');
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('user-input').value = transcript;
+                    sendMessage(transcript, true); // 语音输入
+                };
+
+                recognition.onend = () => {
+                    transitionTo('idle');
+                    isRecording = false;
+                    document.getElementById('record-btn').classList.remove('recording');
+                };
+
+                recognition.onerror = (event) => {
+                    console.error('Recognition error:', event.error);
+                    transitionTo('idle');
+                    alert('识别出错，请重试');
+                };
+            }
+        }
+
+        function toggleRecording() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        // 导航函数
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'report') {
+                loadReportFromCache(); // 本地缓存预览
+                initRadarChart();
+            }
+            if (pageId === 'archive') initArchiveCharts();
+            if (pageId === 'chat') {
+                checkNetwork();
+                initRecognition();
+            }
+            transitionTo('idle');
+        }
+
+        // 完善AI角色训练营的选择场景
+        document.querySelectorAll('.scene-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                document.querySelectorAll('.scene-tag').forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                currentScene = tag.dataset.scene;
+                // 可以根据场景动态调整角色描述，但这里保持简单
+            });
+        });
+
+        function selectRole(card) {
+            if (selectedRoleCard) selectedRoleCard.classList.remove('selected');
+            card.classList.add('selected');
+            selectedRoleCard = card;
+            currentRole = card.dataset.role;
+            document.getElementById('start-dialog').classList.add('active');
+            document.getElementById('chat-title').textContent = `${currentRole} - ${currentScene}`;
+        }
+
+        function startDialog() {
+            if (!currentRole) {
+                alert('请选择AI角色');
+                return;
+            }
+            chatHistory = [];
+            document.getElementById('chat-messages').innerHTML = `<div class="message ai-message">（${currentRole} 微笑点头）根据${currentScene}场景，开始吧！请介绍自己。</div>`;
+            navigateTo('chat');
+        }
+
+        // 发送消息 - 异步通信
+        async function sendMessage(inputText = null, isVoice = false) {
+            const input = document.getElementById('user-input');
+            const message = inputText || input.value.trim();
+            if (!message) return;
+
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML += `<div class="message user-message">${message}</div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            chatHistory.push({ role: 'user', content: message });
+
+            if (isVoice) transitionTo('recognizing');
+
+            transitionTo('thinking');
+
+            // 模拟异步API调用（Coze工作流）
+            try {
+                const response = await simulateAPI(message, currentRole, currentScene);
+                setTimeout(() => {
+                    transitionTo('playing');
+                    chat.innerHTML += `<div class="message ai-message">${response}</div>`;
+                    chat.scrollTop = chat.scrollHeight;
+                    chatHistory.push({ role: 'ai', content: response });
+                    transitionTo('idle');
+                }, 2000); // 模拟延迟
+            } catch (error) {
+                console.error('API error:', error);
+                transitionTo('idle');
+                alert('网络错误，请检查连接');
+            }
+        }
+
+        // 模拟Coze API
+        async function simulateAPI(userMsg, role, scene) {
+            // 模拟网络延迟
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const responses = {
+                '严厉教授': '（教授皱眉）你的观点不够严谨，能提供证据吗？',
+                '友善学长': '（学长鼓励）很好，继续说，你的经验很丰富！',
+                '专业HR': '（HR点头）为什么选择我们公司？',
+                '国际友人': '（友人微笑）Interesting! Tell me more about Chinese culture.'
+            };
+            return responses[role] || '很好的回答，继续练习！';
+        }
+
+        function endTraining() {
+            // 生成报告并缓存
+            const reportData = generateReport();
+            localStorage.setItem('reportCache', JSON.stringify(reportData));
+            navigateTo('report');
+        }
+
+        function generateReport() {
+            // 模拟报告生成
+            return {
+                score: 85,
+                level: '优秀水平',
+                radarData: [80, 85, 70, 90, 75],
+                analysis: {
+                    strengths: '语言表达丰富，逻辑清晰。',
+                    improvements: '减少口语化词汇使用。',
+                    suggestions: '替换“然后”为“因此”。'
+                }
+            };
+        }
+
+        function loadReportFromCache() {
+            const cached = localStorage.getItem('reportCache');
+            if (cached) {
+                const data = JSON.parse(cached);
+                document.querySelector('.score').textContent = `${data.score}/100`;
+                document.querySelector('.level').textContent = data.level;
+                // 更新分析文本
+                document.querySelectorAll('.analysis-section p')[0].textContent = data.analysis.strengths;
+                document.querySelectorAll('.analysis-section p')[1].textContent = data.analysis.improvements;
+                document.querySelectorAll('.analysis-section p')[2].textContent = data.analysis.suggestions;
+                // 更新雷达图数据
+                window.reportRadar.data.datasets[0].data = data.radarData;
+                window.reportRadar.update();
+            }
+        }
+
+        // 保存PDF - 完善
+        async function savePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const reportContent = document.getElementById('report-content');
+            const canvas = await html2canvas(reportContent);
+            const imgData = canvas.toDataURL('image/png');
+            const imgWidth = 210;
+            const pageHeight = 295;
+            const imgHeight = (canvas.height * imgWidth) / canvas.width;
+            let heightLeft = imgHeight;
+            let position = 0;
+
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+
+            while (heightLeft >= 0) {
+                position = heightLeft - imgHeight;
+                doc.addPage();
+                doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+                heightLeft -= pageHeight;
+            }
+
+            doc.save('communicai-report.pdf');
+        }
+
+        // 分享成就 - 完善
+        function shareAchievement() {
+            const shareData = {
+                title: 'CommunicAI 沟通能力报告',
+                text: '我的沟通能力得分85/100，优秀水平！',
+                url: window.location.href
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(console.error);
+            } else {
+                // Fallback: 复制到剪贴板
+                navigator.clipboard.writeText(shareData.text).then(() => {
+                    alert('成就已复制到剪贴板！');
+                }).catch(() => {
+                    prompt('请复制分享文本：', shareData.text);
+                });
+            }
+        }
+
+        // 其他函数保持不变
+        function analyzeScript() {
+            const script = document.getElementById('script-input').value.trim();
+            if (!script) return;
+            const output = document.getElementById('analysis-output');
+            output.innerHTML = `
+                <h4>结构分析</h4><p>逻辑流畅，开头吸引人。</p>
+                <h4>语言润色</h4><p>建议替换“然后”为“因此”。</p>
+                <h4>亮点提示</h4><p>核心论点突出。</p>
+                <h4>风险预警</h4><p>避免敏感表述。</p>
+                <h4>时长预估</h4><p>约5分钟。</p>
+            `;
+        }
+
+        let reportRadar;
+        function initRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            reportRadar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['语言表达', '逻辑结构', '情绪控制', '内容匹配', '互动效果'],
+                    datasets: [{
+                        label: '您的能力',
+                        data: [80, 85, 70, 90, 75],
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: '#007bff',
+                        borderWidth: 2
+                    }, {
+                        label: '平均水平',
+                        data: [70, 75, 65, 80, 70],
+                        backgroundColor: 'rgba(255, 149, 0, 0.2)',
+                        borderColor: '#ff9500',
+                        borderWidth: 2
+                    }]
+                },
+                options: { scales: { r: { beginAtZero: true } } }
+            });
+        }
+
+        function initArchiveCharts() {
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2025-09-01', '2025-09-10', '2025-09-20'],
+                    datasets: [{
+                        label: '自信度指数',
+                        data: [60, 75, 85],
+                        borderColor: '#ff9500',
+                        tension: 0.1
+                    }]
+                }
+            });
+
+            const radarCtx = document.getElementById('archiveRadarChart').getContext('2d');
+            new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['语言', '逻辑', '内容', '情绪'],
+                    datasets: [{
+                        label: '首次诊断',
+                        data: [50, 60, 55, 45],
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: '#007bff'
+                    }, {
+                        label: '当前能力',
+                        data: [80, 85, 90, 75],
+                        backgroundColor: 'rgba(255, 149, 0, 0.2)',
+                        borderColor: '#ff9500'
+                    }]
+                }
+            });
+        }
+
+        // 输入回车发送
+        document.getElementById('user-input').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+
+        // 初始化
+        checkNetwork();
+        initRecognition();
+    </script>
+</body>
+</html>

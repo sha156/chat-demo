@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>场景与角色配置</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background: #f5f7fb; }
+    #tabs { display: flex; overflow-x: auto; gap: 10px; padding: 10px; white-space: nowrap; }
+    .tab { padding: 8px 16px; background: #e0e4ea; border-radius: 16px; cursor: pointer; }
+    .tab.active { background: #2b67f6; color: #fff; }
+    #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; padding: 12px; }
+    .card { background: #fff; border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .card.selected { border: 2px solid #2b67f6; }
+    .card img { width: 60px; height: 60px; border-radius: 50%; }
+    .card h3 { margin: 8px 0; font-size: 16px; }
+    .card p { font-size: 12px; color: #666; }
+    .card .difficulty { font-size: 10px; color: #ff5722; }
+    #start { display: block; margin: 12px auto; padding: 10px 20px; border-radius: 20px; border: 0; background: #ccc; color: #fff; cursor: not-allowed; }
+    #start.active { background: #2b67f6; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="tabs">
+    <div class="tab active">论文答辩</div>
+    <div class="tab">压力面试</div>
+    <div class="tab">社团竞选</div>
+  </div>
+  <div id="cards">
+    <div class="card" data-role="1">
+      <img src="https://via.placeholder.com/60?text=教授" alt="严厉教授">
+      <h3>严厉教授</h3>
+      <p>模拟深度追问，挑战知识盲区</p>
+      <div class="difficulty">难度：★★★</div>
+    </div>
+    <div class="card" data-role="2">
+      <img src="https://via.placeholder.com/60?text=学长" alt="友善学长">
+      <h3>友善学长</h3>
+      <p>提供温暖指导，助你自信应对</p>
+      <div class="difficulty">难度：★</div>
+    </div>
+    <div class="card" data-role="3">
+      <img src="https://via.placeholder.com/60?text=面试官" alt="严苛面试官">
+      <h3>严苛面试官</h3>
+      <p>高压提问，磨练临场反应</p>
+      <div class="difficulty">难度：★★★★</div>
+    </div>
+    <div class="card" data-role="4">
+      <img src="https://via.placeholder.com/60?text=导师" alt="实战导师">
+      <h3>实战导师</h3>
+      <p>真实场景模拟，提升实战能力</p>
+      <div class="difficulty">难度：★★</div>
+    </div>
+  </div>
+  <button id="start" disabled>开始对话</button>
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const cards = document.querySelectorAll('.card');
+    const startBtn = document.getElementById('start');
+    let selectedRole = null;
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      };
+    });
+    cards.forEach(card => {
+      card.onclick = () => {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRole = card.dataset.role;
+        startBtn.disabled = false;
+        startBtn.classList.add('active');
+      };
+    });
+    startBtn.onclick = () => {
+      if (selectedRole) {
+        const scene = document.querySelector('.tab.active').textContent;
+        window.location.href = `chat.html?scene=${encodeURIComponent(scene)}&role=${selectedRole}`;
+      }
+    };
+  </script>
+</body>
+</html>

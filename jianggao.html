@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>CommunicAI — 讲稿智能分析与优化</title>
+  <style>
+    :root{--bg:#0f1724;--card:#0b1220;--muted:#94a3b8;--accent:#7c3aed;--glass:rgba(255,255,255,0.04)}
+    *{box-sizing:border-box}
+    body{margin:0;background:linear-gradient(180deg,#071028 0%, #081526 60%);font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial;color:#e6eef8}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{display:flex;align-items:center;gap:16px}
+    .logo{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#06b6d4);display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,0.6)}
+    h1{font-size:20px;margin:0}
+    p.lead{margin:2px 0 12px;color:var(--muted)}
+    .grid{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:18px}
+    .card{background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);padding:16px;border-radius:12px;backdrop-filter:blur(6px);box-shadow:0 8px 30px rgba(2,6,23,0.6);border:1px solid rgba(255,255,255,0.03)}
+    textarea.input{width:100%;height:360px;padding:12px;border-radius:8px;background:var(--card);border:1px solid rgba(255,255,255,0.03);color:inherit;font-size:14px}
+    .controls{display:flex;gap:8px;margin-top:10px;align-items:center}
+    .btn{padding:10px 14px;border-radius:10px;border:none;cursor:pointer;font-weight:600}
+    .btn.primary{background:linear-gradient(90deg,var(--accent),#06b6d4);color:#021023}
+    .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--muted)}
+    .panel{display:flex;flex-direction:column;gap:12px}
+    .result{padding:12px;border-radius:10px;background:linear-gradient(180deg,rgba(255,255,255,0.01),transparent);border:1px solid rgba(255,255,255,0.02)}
+    .tag{display:inline-block;padding:6px 8px;border-radius:999px;background:var(--glass);font-size:12px;color:var(--muted)}
+    .section-title{display:flex;align-items:center;justify-content:space-between}
+    .list{display:flex;flex-direction:column;gap:8px}
+    .small{font-size:13px;color:var(--muted)}
+    footer{margin-top:16px;color:var(--muted);font-size:13px}
+    @media (max-width:1000px){.grid{grid-template-columns:1fr;}.card.right{order:2}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">C</div>
+      <div>
+        <h1>CommunicAI — 讲稿智能分析与优化</h1>
+        <p class="lead">面向有稿件准备场景（论文答辩、主题演讲）的智能化讲稿分析与优化模块。集成Coze多模态工作流能力（文本为主），快速给出结构、语言、亮点、风险与时长建议。</p>
+      </div>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <div class="section-title"><strong>讲稿输入（粘贴 / 上传）</strong><span class="tag">支持Markdown / 纯文本文本</span></div>
+        <textarea id="scriptInput" class="input" placeholder="在此粘贴或输入讲稿文本（建议 300~3000 字）"></textarea>
+        <div class="controls">
+          <button id="analyzeBtn" class="btn primary">智能分析并优化</button>
+          <button id="polishBtn" class="btn ghost">仅语言润色</button>
+          <button id="clearBtn" class="btn ghost">清空</button>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <div class="small">语速（字/分钟）：</div>
+          <input id="wpm" type="range" min="80" max="200" value="130" class="slider" />
+          <div id="wpmVal" class="small">130</div>
+          <div style="margin-left:auto" class="small">时长预估将基于语速与稿件字数计算</div>
+        </div>
+      </div>
+
+      <div class="card right">
+        <div class="section-title"><strong>多维度复盘</strong><span class="tag">结构 · 亮点 · 风险 · 时长</span></div>
+        <div class="list" style="margin-top:12px">
+          <div class="result" id="structureResult"><strong>结构分析</strong><div id="structureTxt" class="small">暂无</div></div>
+          <div class="result" id="polishCard"><strong>语言润色</strong><div id="polishExample" class="small">暂无</div></div>
+          <div class="result" id="highlightsResult"><strong>亮点提示</strong><div id="highlightsTxt" class="small">暂无</div></div>
+          <div class="result" id="risksResult"><strong>风险预警</strong><div id="risksTxt" class="small">暂无</div></div>
+          <div class="result" id="durationResult"><strong>时长预估</strong><div id="durationTxt" class="small">暂无</div></div>
+        </div>
+      </div>
+    </div>
+    <footer>请在调用前确保已正确安装并引入 <code>@coze/api</code> SDK，并替换 token 与 workflow_id。</footer>
+  </div>
+
+  <script type="module">
+    import { CozeAPI } from 'https://cdn.skypack.dev/@coze/api';
+
+    const input = document.getElementById('scriptInput');
+    const analyzeBtn = document.getElementById('analyzeBtn');
+    const polishBtn = document.getElementById('polishBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const wpm = document.getElementById('wpm');
+    const wpmVal = document.getElementById('wpmVal');
+
+    const apiClient = new CozeAPI({
+      token: 'YOUR_COZE_API_KEY',
+      baseURL: 'https://api.coze.cn'
+    });
+
+    wpm.addEventListener('input', ()=>{wpmVal.textContent=wpm.value});
+    clearBtn.addEventListener('click', ()=>{input.value=''; resetResults()});
+
+    function resetResults(){
+      ['structureTxt','polishExample','highlightsTxt','risksTxt','durationTxt'].forEach(id=>document.getElementById(id).textContent = '暂无')
+    }
+
+    async function callCozeAnalyze(scriptText){
+      return apiClient.workflows.runs.create({
+        workflow_id: '7552068874451025970',
+        parameters: { text: scriptText }
+      });
+    }
+
+    analyzeBtn.addEventListener('click', async ()=>{
+      const text = input.value.trim();
+      if(!text){alert('请先输入讲稿文本');return}
+      try{
+        const data = await callCozeAnalyze(text);
+        const r = data || {};
+        document.getElementById('structureTxt').textContent = r.structure || '（未识别）';
+        document.getElementById('polishExample').textContent = r.polished || '（无润色示例）';
+        document.getElementById('highlightsTxt').textContent = r.highlights?.join('\n') || '（无亮点）';
+        document.getElementById('risksTxt').textContent = (r.risks && r.risks.length)? r.risks.join('\n') : '（未检测到风险）';
+        const words = (text.match(/\S+/g)||[]).length;
+        const minutes = Math.ceil(words / parseInt(wpm.value));
+        document.getElementById('durationTxt').textContent = `${words} 字 · 约 ${minutes} 分钟（按 ${wpm.value} 字/分钟）`;
+      }catch(e){alert('分析失败：'+e.message)}
+    });
+
+    polishBtn.addEventListener('click', async ()=>{
+      const text = input.value.trim();
+      if(!text){alert('请先输入讲稿文本');return}
+      try{
+        const data = await callCozeAnalyze(text);
+        document.getElementById('polishExample').textContent = data.polished || '（无润色结果）';
+      }catch(e){alert('润色失败：'+e.message)}
+    });
+  </script>
+</body>
+</html>

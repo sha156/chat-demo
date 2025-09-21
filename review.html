@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>复盘中心</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background: #f5f7fb; }
+    h2 { text-align: center; }
+    canvas { max-width: 100%; height: 200px; margin: 10px 0; }
+    .section { margin: 10px 0; }
+    .section h3 { font-size: 16px; color: #2b67f6; }
+    .section p { font-size: 14px; color: #333; }
+    button { display: block; margin: 12px auto; padding: 10px 20px; border-radius: 20px; border: 0; background: #2b67f6; color: #fff; }
+  </style>
+</head>
+<body>
+  <h2>复盘中心</h2>
+  <canvas id="radarChart"></canvas>
+  <div id="analysis">
+    <div class="section"><h3>语言表达</h3><p id="lang"></p></div>
+    <div class="section"><h3>逻辑结构</h3><p id="logic"></p></div>
+    <div class="section"><h3>内容匹配</h3><p id="content"></p></div>
+    <div class="section"><h3>情绪控制</h3><p id="emotion"></p></div>
+    <div class="section"><h3>综合评分</h3><p id="score"></p></div>
+  </div>
+  <button onclick="window.location.href='progress.html'">查看成长档案</button>
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    const scene = params.get('scene') || '未知场景';
+    const role = params.get('role') || '未知角色';
+
+    // Coze API 集成：获取复盘分析数据
+    // fetch('https://api.coze.com/v1/workflow/run', {
+    //   method: 'POST',
+    //   headers: { 'Authorization': 'Bearer YOUR_COZE_API_KEY' },
+    //   body: JSON.stringify({ session: 'review', scene: scene, role: role })
+    // }).then(res => res.json()).then(data => {
+    //   document.getElementById('lang').textContent = data.language || '词汇丰富，需减少“然后”';
+    //   document.getElementById('logic').textContent = data.logic || '论证清晰，层次感强';
+    //   document.getElementById('content').textContent = data.content || '回答相关性高';
+    //   document.getElementById('emotion').textContent = data.emotion || '表现出较强自信';
+    //   document.getElementById('score').textContent = data.score || '85/100';
+    //   updateRadarChart(data.scores || [80, 85, 90, 75]);
+    // });
+
+    // 模拟数据
+    document.getElementById('lang').textContent = '词汇丰富，需减少“然后”';
+    document.getElementById('logic').textContent = '论证清晰，层次感强';
+    document.getElementById('content').textContent = '回答相关性高';
+    document.getElementById('emotion').textContent = '表现出较强自信';
+    document.getElementById('score').textContent = '85/100';
+    updateRadarChart([80, 85, 90, 75]);
+
+    function updateRadarChart(scores) {
+      new Chart(document.getElementById('radarChart'), {
+        type: 'radar',
+        data: {
+          labels: ['语言表达', '逻辑结构', '内容匹配', '情绪控制'],
+          datasets: [{
+            label: '能力评分',
+            data: scores,
+            backgroundColor: 'rgba(43, 103, 246, 0.2)',
+            borderColor: '#2b67f6',
+            borderWidth: 2
+          }]
+        },
+        options: { scale: { ticks: { beginAtZero: true, max: 100 } } }
+      });
+    }
+  </script>
+</body>
+</html>

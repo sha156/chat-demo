@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>讲稿实验室</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background: #f5f7fb; }
+    textarea { width: 100%; height: 200px; padding: 10px; border-radius: 8px; border: 1px solid #d7dbe0; font-size: 14px; }
+    button { display: block; margin: 12px auto; padding: 10px 20px; border-radius: 20px; border: 0; background: #2b67f6; color: #fff; }
+    #result { padding: 12px; }
+    .section { margin: 10px 0; }
+    .section h3 { font-size: 16px; color: #2b67f6; }
+    .section p { font-size: 14px; color: #333; }
+    .highlight { color: #4caf50; }
+    .warning { color: #ff5722; }
+  </style>
+</head>
+<body>
+  <h2>讲稿实验室</h2>
+  <textarea id="script" placeholder="请输入你的讲稿..."></textarea>
+  <button id="analyze">分析与优化</button>
+  <div id="result"></div>
+  <script>
+    const scriptInput = document.getElementById('script');
+    const analyzeBtn = document.getElementById('analyze');
+    const resultDiv = document.getElementById('result');
+
+    analyzeBtn.onclick = () => {
+      const script = scriptInput.value;
+      if (!script) {
+        resultDiv.innerHTML = '<p style="color:#ff5722">请输入讲稿！</p>';
+        return;
+      }
+      // Coze API 集成：分析讲稿
+      // fetch('https://api.coze.com/v1/workflow/run', {
+      //   method: 'POST',
+      //   headers: { 'Authorization': 'Bearer YOUR_COZE_API_KEY' },
+      //   body: JSON.stringify({ script: script })
+      // }).then(res => res.json()).then(data => {
+      //   resultDiv.innerHTML = `
+      //     <div class="section"><h3>结构分析</h3><p>${data.structure || '开头清晰，主体需更详细'}</p></div>
+      //     <div class="section"><h3>语言润色</h3><p>${data.polished || '建议替换“然后”为“因此”'}</p></div>
+      //     <div class="section"><h3>亮点提示</h3><p class="highlight">${data.highlights || '核心论点：创新性强'}</p></div>
+      //     <div class="section"><h3>风险预警</h3><p class="warning">${data.risks || '避免过于口语化'}</p></div>
+      //     <div class="section"><h3>时长预估</h3><p>${data.duration || '约5分钟'}</p></div>
+      //   `;
+      // });
+      resultDiv.innerHTML = `
+        <div class="section"><h3>结构分析</h3><p>开头清晰，主体需更详细</p></div>
+        <div class="section"><h3>语言润色</h3><p>建议替换“然后”为“因此”</p></div>
+        <div class="section"><h3>亮点提示</h3><p class="highlight">核心论点：创新性强</p></div>
+        <div class="section"><h3>风险预警</h3><p class="warning">避免过于口语化</p></div>
+        <div class="section"><h3>时长预估</h3><p>约5分钟</p></div>
+      `;
+    };
+  </script>
+</body>
+</html>

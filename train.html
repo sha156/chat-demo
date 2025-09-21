@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI角色训练营</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background: #f5f7fb; }
+    #tabs { display: flex; overflow-x: auto; gap: 10px; padding: 10px; white-space: nowrap; }
+    .tab { padding: 8px 16px; background: #e0e4ea; border-radius: 16px; cursor: pointer; }
+    .tab.active { background: #2b67f6; color: #fff; }
+    #cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; padding: 12px; }
+    .card { background: #fff; border-radius: 12px; padding: 12px; text-align: center; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .card.selected { border: 2px solid #2b67f6; }
+    .card img { width: 60px; height: 60px; border-radius: 50%; }
+    .card h3 { margin: 8px 0; font-size: 16px; }
+    .card p { font-size: 12px; color: #666; }
+    #chat { display: none; flex-direction: column; height: 80vh; }
+    #msgs { flex: 1; overflow: auto; padding-bottom: 8px; }
+    .msg { display: flex; margin: 8px; }
+    .msg.ai { justify-content: flex-start; }
+    .msg.user { justify-content: flex-end; }
+    .bubble { max-width: 75%; padding: 10px 14px; border-radius: 16px; font-size: 15px; }
+    .bubble.ai { background: #eef2f6; color: #111; border-top-left-radius: 6px; }
+    .bubble.user { background: #2b67f6; color: #fff; border-top-right-radius: 6px; }
+    #bar { display: flex; gap: 8px; padding-top: 8px; }
+    input { flex: 1; padding: 10px; border-radius: 20px; border: 1px solid #d7dbe0; }
+    button { padding: 10px 14px; border-radius: 18px; border: 0; background: #2b67f6; color: #fff; }
+    #start, #end { display: block; margin: 12px auto; padding: 10px 20px; border-radius: 20px; border: 0; background: #ccc; color: #fff; cursor: not-allowed; }
+    #start.active { background: #2b67f6; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div id="select">
+    <div id="tabs">
+      <div class="tab active">研究生复试</div>
+      <div class="tab">学术汇报</div>
+      <div class="tab">跨文化交流</div>
+    </div>
+    <div id="cards">
+      <div class="card" data-role="1">
+        <img src="https://via.placeholder.com/60?text=导师" alt="严厉导师">
+        <h3>严厉导师</h3>
+        <p>深度追问，挑战盲区</p>
+      </div>
+      <div class="card" data-role="2">
+        <img src="https://via.placeholder.com/60?text=学长" alt="友善学长">
+        <h3>友善学长</h3>
+        <p>温暖指导，增强自信</p>
+      </div>
+      <div class="card" data-role="3">
+        <img src="https://via.placeholder.com/60?text=HR" alt="专业HR">
+        <h3>专业HR</h3>
+        <p>高压面试，磨练反应</p>
+      </div>
+      <div class="card" data-role="4">
+        <img src="https://via.placeholder.com/60?text=友人" alt="国际友人">
+        <h3>国际友人</h3>
+        <p>跨文化交流，拓展视野</p>
+      </div>
+    </div>
+    <button id="start" disabled>开始对话</button>
+  </div>
+  <div id="chat">
+    <div id="msgs"></div>
+    <div id="bar">
+      <input id="i" placeholder="输入你的回答">
+      <button id="s">发送</button>
+    </div>
+    <button id="end">结束训练</button>
+  </div>
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const cards = document.querySelectorAll('.card');
+    const startBtn = document.getElementById('start');
+    const chat = document.getElementById('chat');
+    const select = document.getElementById('select');
+    const msgs = document.getElementById('msgs');
+    const input = document.getElementById('i');
+    const sendBtn = document.getElementById('s');
+    const endBtn = document.getElementById('end');
+    let selectedRole = null;
+
+    tabs.forEach(tab => {
+      tab.onclick = () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+      };
+    });
+
+    cards.forEach(card => {
+      card.onclick = () => {
+        cards.forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        selectedRole = card.dataset.role;
+        startBtn.disabled = false;
+        startBtn.classList.add('active');
+      };
+    });
+
+    startBtn.onclick = () => {
+      if (selectedRole) {
+        select.style.display = 'none';
+        chat.style.display = 'flex';
+        const scene = document.querySelector('.tab.active').textContent;
+        // Coze API 集成：初始化对话
+        // fetch('https://api.coze.com/v1/workflow/run', {
+        //   method: 'POST',
+        //   headers: { 'Authorization': 'Bearer YOUR_COZE_API_KEY' },
+        //   body: JSON.stringify({ scene: scene, role: selectedRole })
+        // }).then(res => res.json()).then(data => {
+        //   addMessage('ai', data.response || '请回答我的问题！');
+        // });
+        addMessage('ai', `欢迎进入${scene}，我是角色${selectedRole}，请回答：你的核心优势是什么？`);
+      }
+    };
+
+    function addMessage(who, text) {
+      const div = document.createElement('div');
+      div.className = `msg ${who}`;
+      const bubble = document.createElement('div');
+      bubble.className = `bubble ${who}`;
+      bubble.textContent = text;
+      div.appendChild(bubble);
+      msgs.appendChild(div);
+      msgs.scrollTop = msgs.scrollHeight;
+    }
+
+    sendBtn.onclick = () => {
+      if (!input.value) return;
+      addMessage('user', input.value);
+      // Coze API 集成：发送用户回答，获取 AI 回复
+      // fetch('https://api.coze.com/v1/workflow/run', {
+      //   method: 'POST',
+      //   headers: { 'Authorization': 'Bearer YOUR_COZE_API_KEY' },
+      //   body: JSON.stringify({ user_input: input.value, role: selectedRole })
+      // }).then(res => res.json()).then(data => {
+      //   addMessage('ai', data.response || '收到你的回答，请继续！');
+      // });
+      setTimeout(() => addMessage('ai', `收到：${input.value}，请进一步说明！`), 600);
+      input.value = '';
+    };
+
+    input.onkeydown = e => {
+      if (e.key === 'Enter') {
+        sendBtn.click();
+        e.preventDefault();
+      }
+    };
+
+    endBtn.onclick = () => {
+      const scene = document.querySelector('.tab.active').textContent;
+      // Coze API 集成：生成复盘数据
+      // fetch('https://api.coze.com/v1/workflow/run', {
+      //   method: 'POST',
+      //   headers: { 'Authorization': 'Bearer YOUR_COZE_API_KEY' },
+      //   body: JSON.stringify({ session: 'end', role: selectedRole })
+      // }).then(res => res.json()).then(data => {
+      //   window.location.href = `review.html?scene=${encodeURIComponent(scene)}&role=${selectedRole}`;
+      // });
+      window.location.href = `review.html?scene=${encodeURIComponent(scene)}&role=${selectedRole}`;
+    };
+  </script>
+</body>
+</html>

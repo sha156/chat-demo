@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>成长档案</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 0; padding: 12px; background: #f5f7fb; }
+    h2 { text-align: center; }
+    canvas { max-width: 100%; height: 200px; margin: 10px 0; }
+    .section { margin: 10px 0; }
+    .section h3 { font-size: 16px; color: #2b67f6; }
+    .section p { font-size: 14px; color: #333; }
+    .history-item { padding: 8px; background: #fff; border-radius: 8px; margin: 5px 0; }
+    button { display: block; margin: 12px auto; padding: 10px 20px; border-radius: 20px; border: 0; background: #2b67f6; color: #fff; }
+  </style>
+</head>
+<body>
+  <h2>成长档案</h2>
+  <canvas id="progressChart"></canvas>
+  <div class="section">
+    <h3>历史记录</h3>
+    <div id="history"></div>
+  </div>
+  <div class="section">
+    <h3>个性化推荐</h3>
+    <p id="recommend"></p>
+  </div>
+  <button onclick="window.location.href='train.html'">开始新训练</button>
+  <script>
+    // Coze API 集成：获取成长数据
+    // fetch('https://api.coze.com/v1/workflow/run', {
+    //   method: 'POST',
+    //   headers: { 'Authorization': 'Bearer YOUR_COZE_API_KEY' },
+    //   body: JSON.stringify({ session: 'progress' })
+    // }).then(res => res.json()).then(data => {
+    //   updateProgressChart(data.scores || [[80, 85, 90, 75], [85, 88, 92, 78]]);
+    //   document.getElementById('history').innerHTML = data.history?.map(h => `<div class="history-item">${h.date}: ${h.scene} - ${h.role}</div>`).join('') || '暂无记录';
+    //   document.getElementById('recommend').textContent = data.recommend || '建议练习跨文化交流';
+    // });
+
+    // 模拟数据
+    updateProgressChart([[80, 85, 90, 75], [85, 88, 92, 78]]);
+    document.getElementById('history').innerHTML = `
+      <div class="history-item">2025-09-20: 研究生复试 - 严厉导师</div>
+      <div class="history-item">2025-09-21: 学术汇报 - 友善学长</div>
+    `;
+    document.getElementById('recommend').textContent = '建议练习跨文化交流';
+
+    function updateProgressChart(scores) {
+      new Chart(document.getElementById('progressChart'), {
+        type: 'radar',
+        data: {
+          labels: ['语言表达', '逻辑结构', '内容匹配', '情绪控制'],
+          datasets: scores.map((s, i) => ({
+            label: `训练${i + 1}`,
+            data: s,
+            backgroundColor: `rgba(43, 103, 246, ${0.2 - i * 0.05})`,
+            borderColor: `rgba(43, 103, 246, ${1 - i * 0.2})`,
+            borderWidth: 2
+          }))
+        },
+        options: { scale: { ticks: { beginAtZero: true, max: 100 } } }
+      });
+    }
+  </script>
+</body>
+</html>

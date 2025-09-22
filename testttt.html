@@ -1,0 +1,1534 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CommunicAI - AI沟通教练</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: url('https://source.unsplash.com/1600x900/?technology,blue') no-repeat center center/cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 0;
+            overflow-y: auto;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 100vw;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            padding: 15px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border-radius: 0;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+
+        .user-info h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .confidence-bar {
+            margin-top: 5px;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-bar div {
+            height: 100%;
+            background: #ff9500;
+            transition: width 0.5s ease-in-out;
+            width: 0%;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #fff, #f9f9f9);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #007bff;
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .card img {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+        }
+
+        .card.academic { background: linear-gradient(135deg, #e6f0ff, #d1e3ff); }
+        .card.interview { background: linear-gradient(135deg, #fff4e6, #ffe6cc); }
+        .card.cross-culture { background: linear-gradient(135deg, #e6fff0, #ccffe6); }
+        .card.practice { background: linear-gradient(135deg, #f0e6ff, #e6ccff); }
+
+        /* 报告页样式 - 美化版 */
+        .report-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .score-section {
+            background: linear-gradient(135deg, #ff9500, #e68900);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .score {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+
+        .level {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .input-section {
+            background: #fff;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .input-section label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .input-section textarea {
+            width: 100%;
+            height: 150px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            resize: vertical;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 12px 20px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.3s;
+            font-size: 1rem;
+        }
+
+        .btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .trace-btn {
+            background: linear-gradient(90deg, #4285f4, #3367d6);
+        }
+
+        .analysis-section {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .analysis-section h4 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: #007bff;
+            display: flex;
+            align-items: center;
+        }
+
+        .analysis-section h4 i {
+            margin-right: 10px;
+            color: #ff9500;
+        }
+
+        .analysis-section p {
+            line-height: 1.6;
+            color: #555;
+        }
+
+        .dimension-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .dimension-item {
+            background: #fff;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        .dimension-label {
+            font-weight: bold;
+            color: #333;
+        }
+
+        .dimension-score {
+            font-size: 1.2rem;
+            color: #ff9500;
+        }
+
+        .radar-section {
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        /* AI角色配置页 */
+        .scene-selector {
+            display: flex;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            gap: 10px;
+        }
+
+        .scene-tag {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #e6f0ff, #d1e3ff);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.3s;
+        }
+
+        .scene-tag.active {
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .role-card {
+            background: linear-gradient(135deg, #fff, #f9f9f9);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .role-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .role-card.selected {
+            border: 2px solid #007bff;
+        }
+
+        .role-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        .role-name {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .role-desc {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .role-difficulty {
+            font-size: 0.8rem;
+            color: #ff9500;
+        }
+
+        .start-btn {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(90deg, #ff9500, #e68900);
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            cursor: pointer;
+            display: none;
+            transition: transform 0.3s;
+        }
+
+        .start-btn.active {
+            display: block;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 对话界面 */
+        .chat-container {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .ai-message {
+            background: linear-gradient(135deg, #e6f0ff, #d1e3ff);
+            align-self: flex-start;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #ffe6cc, #fff4e6);
+            align-self: flex-end;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .record-btn {
+            background: #ff9500;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-left: 10px;
+        }
+
+        .record-btn.recording {
+            background: #dc3545;
+        }
+
+        .status-bar {
+            background: #f9f9f9;
+            padding: 8px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #007bff;
+            margin-bottom: 10px;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-bar.show {
+            display: block;
+        }
+
+        .offline-notice {
+            background: linear-gradient(135deg, #fff3cd, #ffe6cc);
+            color: #856404;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        /* 讲稿实验室 - 美化版 */
+        .script-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .script-header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: #007bff;
+            font-size: 1.5rem;
+        }
+
+        .script-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 15px;
+            border: 2px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: #fff;
+            font-size: 1rem;
+            resize: vertical;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+        }
+
+        .analyze-btn {
+            display: block;
+            width: 200px;
+            margin: 0 auto 20px;
+            padding: 15px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: transform 0.3s;
+            border: none;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .analysis-result {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            min-height: 100px;
+        }
+
+        .analysis-result h4 {
+            color: #007bff;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+        }
+
+        .analysis-result h4 i {
+            margin-right: 10px;
+        }
+
+        .analysis-result p {
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 15px;
+        }
+
+        /* 成长档案 */
+        .line-chart, .radar-chart {
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .history-item {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .trace-output {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            margin-top: 20px;
+            line-height: 1.6;
+            color: #555;
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 400px) {
+            body {
+                padding: 0;
+            }
+            .app-container {
+                border-radius: 0;
+            }
+            .btn, .analyze-btn, .send-btn, .start-btn {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            .input-area {
+                padding: 8px;
+            }
+            .chat-container {
+                height: calc(100vh - 150px);
+            }
+            .grid {
+                gap: 10px;
+            }
+            .card {
+                padding: 12px;
+            }
+            .dimension-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<script>
+    function updateInput(text) {
+        const inputField = document.getElementById('user-input');
+        if (inputField) {
+            inputField.value = text;  // 填入输入框
+            inputField.focus();  // 可选：自动聚焦，便于编辑
+            console.log('Voice result:', text);  // 调试
+            // 可选：自动发送消息（如果你的handleSendMessage存在）
+            // handleSendMessage(text, true);
+        } else {
+            console.error('Input field not found! ID: user-input');
+            alert('语音结果: ' + text);  // APK中弹窗显示
+        }
+    }
+
+    // 可选：从App Inventor触发录音按钮（如果ID="record-btn"）
+    function startVoiceFromApp() {
+        const btn = document.getElementById('record-btn');
+        if (btn) {
+            btn.click();  // 模拟点击
+        }
+    }
+</script>
+<body>
+    <div class="app-container">
+        <!-- 首页 -->
+        <div id="home" class="page active">
+            <div class="header">
+                <i class="fas fa-user-circle fa-2x avatar"></i>
+                <div class="user-info">
+                    <h2>欢迎，Z世代沟通者</h2>
+                    <p>平均分 0</p>
+                    <div class="confidence-bar">
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="card academic" onclick="navigateTo('script-lab')">
+                    <i class="fas fa-book fa-2x"></i>
+                    <h3>讲稿实验室</h3>
+                </div>
+                <div class="card interview" onclick="navigateTo('role-config')">
+                    <i class="fas fa-briefcase fa-2x"></i>
+                    <h3>AI角色训练营</h3>
+                </div>
+                <div class="card cross-culture" onclick="navigateTo('report')">
+                    <i class="fas fa-globe fa-2x"></i>
+                    <h3>复盘中心</h3>
+                </div>
+                <div class="card practice" onclick="navigateTo('archive')">
+                    <i class="fas fa-microphone fa-2x"></i>
+                    <h3>成长档案</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 沟通能力诊断报告页 (复盘中心) - 美化版 -->
+        <div id="report" class="page">
+            <div class="report-container">
+                <div class="report-header">
+                    <h1><i class="fas fa-chart-line"></i> 对话复盘报告</h1>
+                </div>
+                <div class="input-section">
+                    <label for="history-input"><i class="fas fa-history"></i> 对话历史记录：</label>
+                    <textarea id="history-input" placeholder="从对话页面跳转后，这里会自动填充内容..."></textarea>
+                </div>
+                <div class="buttons">
+                    <button id="generate-btn" class="btn">生成报告</button>
+                    <button id="trace-link-btn" class="btn trace-btn hidden">查看成长轨迹</button>
+                </div>
+                <div id="report-output" style="display: none;">
+                    <div class="score-section">
+                        <div class="score" id="report-score">-</div>
+                        <div class="level" id="report-level">-</div>
+                    </div>
+                    <div class="radar-section">
+                        <h4><i class="fas fa-chart-radar"></i> 维度雷达图</h4>
+                        <canvas id="report-radar-chart" width="300" height="300"></canvas>
+                    </div>
+                    <div class="analysis-section">
+                        <h4><i class="fas fa-thumbs-up"></i> 优势分析</h4>
+                        <p id="strengths">-</p>
+                    </div>
+                    <div class="analysis-section">
+                        <h4><i class="fas fa-lightbulb"></i> 改进建议</h4>
+                        <p id="improvements">-</p>
+                    </div>
+                    <div class="analysis-section">
+                        <h4><i class="fas fa-chart-bar"></i> 维度分析</h4>
+                        <div class="dimension-grid" id="dimensions">
+                            <!-- 动态填充 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="btn" style="margin-top: 20px; display: block; max-width: 200px; margin-left: auto; margin-right: auto;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- AI角色训练配置页 -->
+        <div id="role-config" class="page">
+            <h2>选择训练场景</h2>
+            <div class="scene-selector">
+                <div class="scene-tag active" data-scene="研究生复试面试">研究生复试面试</div>
+                <div class="scene-tag" data-scene="论文答辩">论文答辩</div>
+                <div class="scene-tag" data-scene="压力面试">压力面试</div>
+                <div class="scene-tag" data-scene="社团竞选">社团竞选</div>
+                <div class="scene-tag" data-scene="跨文化交流">跨文化交流</div>
+                <div class="scene-tag" data-scene="求职面试">求职面试</div>
+                <div class="scene-tag" data-scene="学术汇报">学术汇报</div>
+            </div>
+            <h2>选择AI角色</h2>
+            <div class="role-grid">
+                <div class="role-card" data-role="严厉导师" data-description="你的任务是扮演一位严厉的导师，对我进行深度追问，挑战我知识和逻辑上的盲区。" onclick="selectRole(this)">
+                    <i class="fas fa-chalkboard-teacher fa-3x role-avatar"></i>
+                    <p class="role-name">严厉导师</p>
+                    <p class="role-desc">深度追问，挑战盲区</p>
+                    <p class="role-difficulty">难度：高</p>
+                </div>
+                <div class="role-card" data-role="友善学长" data-description="你的任务是扮演一位友善的学长，用温暖和鼓励的语气为我提供指导，帮助我增强自信。" onclick="selectRole(this)">
+                    <i class="fas fa-user-graduate fa-3x role-avatar"></i>
+                    <p class="role-name">友善学长</p>
+                    <p class="role-desc">温暖指导，增强自信</p>
+                    <p class="role-difficulty">难度：中</p>
+                </div>
+                <div class="role-card" data-role="专业HR" data-description="你的任务是扮演一位专业的HR，对我进行一场高压面试，考察我的专业能力和临场反应。" onclick="selectRole(this)">
+                    <i class="fas fa-briefcase fa-3x role-avatar"></i>
+                    <p class="role-name">专业HR</p>
+                    <p class="role-desc">高压面试，磨练反应</p>
+                    <p class="role-difficulty">难度：高</p>
+                </div>
+                <div class="role-card" data-role="国际友人" data-description="你的任务是扮演一位热情的国际友人，与我进行跨文化交流，帮助我拓展国际视野，锻炼我的沟通能力。" onclick="selectRole(this)">
+                    <i class="fas fa-globe-americas fa-3x role-avatar"></i>
+                    <p class="role-name">国际友人</p>
+                    <p class="role-desc">跨文化交流，拓展视野</p>
+                    <p class="role-difficulty">难度：中</p>
+                </div>
+            </div>
+            <div class="start-btn" id="start-dialog" onclick="startDialog()">开始对话</div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- 对话界面 (AI角色训练营) -->
+        <div id="chat" class="page">
+            <h2 id="chat-title">AI对话练习</h2>
+            <div class="offline-notice" id="offline-notice">网络连接缓慢，已切换至文本模式</div>
+            <div class="status-bar" id="status-bar"></div>
+            <div class="chat-container" id="chat-messages">
+                <div class="message ai-message">欢迎开始训练！请介绍一下自己。</div>
+            </div>
+            <div class="input-area">
+                <button class="record-btn" id="record-btn" onclick="toggleRecording()" title="录音"><i class="fas fa-microphone"></i></button>
+                <input type="text" id="user-input" class="text-input" placeholder="输入你的回复..." onkeypress="if(event.key==='Enter') handleSendMessage();">
+                <div class="send-btn" onclick="handleSendMessage()"><i class="fas fa-paper-plane"></i></div>
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="endTraining()">结束训练，查看复盘</div>
+            <div class="btn" style="margin-top: 10px;" onclick="navigateTo('role-config')">返回配置</div>
+        </div>
+
+        <!-- 讲稿实验室 - 美化版 -->
+        <div id="script-lab" class="page">
+            <div class="script-container">
+                <div class="script-header">
+                    <i class="fas fa-edit"></i> 讲稿实验室
+                </div>
+                <textarea class="script-textarea" id="script-text-input" placeholder="输入或粘贴你的讲稿内容，这里将进行AI优化分析..."></textarea>
+                <button class="analyze-btn" onclick="callCozeScriptApi()"><i class="fas fa-magic"></i> 分析并优化</button>
+                <div class="analysis-result" id="response-output">
+                    <!-- 结果将在这里显示 -->
+                </div>
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- 个人成长档案中心 -->
+        <div id="archive" class="page">
+            <h2>成长档案</h2>
+            <div class="line-chart">
+                <h4><i class="fas fa-chart-line"></i> 综合评价分数趋势</h4>
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="radar-chart">
+                <h4><i class="fas fa-chart-radar"></i> 能力对比</h4>
+                <canvas id="archiveRadarChart"></canvas>
+            </div>
+            <h4>历史训练记录</h4>
+            <ul class="history-list" id="history-container">
+                <!-- 动态加载 -->
+            </ul>
+            <div class="buttons">
+                <button class="btn" onclick="callTraceApi()"><i class="fas fa-search"></i> 分析成长轨迹</button>
+                <button class="btn" style="background: linear-gradient(90deg, #dc3545, #c82333);" onclick="clearHistory()"><i class="fas fa-trash"></i> 清空历史</button>
+            </div>
+            <div class="trace-output" id="trace-output" style="display: none;"></div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentScene = '研究生复试面试';
+        let currentRole = '';
+        let selectedRoleCard = null;
+        let recognition = null;
+        let isRecording = false;
+        let chatHistory = [];
+        let messages = [];
+        let selectedDescription = '';
+        let allReportsText = '';
+        let reportRadarChart = null;
+        let lineChart = null;
+        let archiveRadarChart = null;
+        const COZE_API_KEY = "pat_eCLM7GUboyGvwXxxGWBF7AtVTW6AUWnwuKZn8uqQVJbzW8ibaD6brNMYhg3re3YP";
+        const BOT_ID = "7551988709244485674";
+        const USER_ID = "123456789";
+        const COZE_API_URL = "https://api.coze.cn/v3/chat";
+        const TRACE_WORKFLOW_ID = "7552068874451025970";
+        const REVIEW_WORKFLOW_ID = "7551760177268162570";
+        const WORKFLOW_API_URL = "https://api.coze.cn/v1/workflow/stream_run";
+        const SCRIPT_WORKFLOW_ID = "7551990489299451946";
+
+        // 状态机
+        const states = {
+            idle: { enter: () => updateStatus(''), show: false },
+            recording: { enter: () => updateStatus('录音中... <span class="loading"></span>'), show: true },
+            recognizing: { enter: () => updateStatus('识别中... <span class="loading"></span>'), show: true },
+            thinking: { enter: () => updateStatus('AI思考中... <span class="loading"></span>'), show: true },
+            playing: { enter: () => updateStatus('播放中...'), show: true }
+        };
+
+        let currentState = 'idle';
+        function transitionTo(newState) {
+            currentState = newState;
+            states[newState].enter();
+        }
+
+        function updateStatus(html) {
+            const statusBar = document.getElementById('status-bar');
+            if (statusBar) {
+                statusBar.innerHTML = html;
+                statusBar.classList.toggle('show', !!html);
+            }
+        }
+
+        // 更新首页平均分条
+        function updateAverageScoreBar() {
+            const history = JSON.parse(localStorage.getItem('all_review_reports')) || [];
+            const scores = history.map(item => item.score || 0);
+            const avg = scores.length ? scores.reduce((sum, s) => sum + s, 0) / scores.length : 0;
+            const bar = document.querySelector('.confidence-bar div');
+            bar.style.width = `${avg}%`;
+            const p = document.querySelector('.user-info p');
+            p.textContent = `平均分 ${Math.round(avg)}`;
+        }
+
+        // 网络检查
+        function checkNetwork() {
+            const notice = document.getElementById('offline-notice');
+            const recordBtn = document.getElementById('record-btn');
+            if (!navigator.onLine) {
+                notice.style.display = 'block';
+                recordBtn.style.display = 'none';
+                transitionTo('idle');
+            } else {
+                notice.style.display = 'none';
+                recordBtn.style.display = 'inline-block';
+            }
+        }
+
+        window.addEventListener('online', checkNetwork);
+        window.addEventListener('offline', checkNetwork);
+
+        // 语音识别
+        function initRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRecognition) {
+                recognition = new SpeechRecognition();
+                recognition.lang = 'zh-CN';
+                recognition.interimResults = false;
+                recognition.onstart = () => {
+                    transitionTo('recording');
+                    isRecording = true;
+                    document.getElementById('record-btn').classList.add('recording');
+                };
+                recognition.onresult = (event) => {
+                    transitionTo('recognizing');
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('user-input').value = transcript;
+                    handleSendMessage(transcript, true);
+                };
+                recognition.onend = () => {
+                    transitionTo('idle');
+                    isRecording = false;
+                    document.getElementById('record-btn').classList.remove('recording');
+                };
+                recognition.onerror = (event) => {
+                    transitionTo('idle');
+                    alert('识别出错，请重试');
+                };
+            }
+        }
+
+        function toggleRecording() {
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        }
+
+        // 导航
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'home') {
+                updateAverageScoreBar();
+            }
+            if (pageId === 'report') {
+                const history = localStorage.getItem('dialogue_history_for_review');
+                if (history) {
+                    document.getElementById('history-input').value = history;
+                    generateReview();
+                    localStorage.removeItem('dialogue_history_for_review');
+                }
+            }
+            if (pageId === 'archive') {
+                loadHistory();
+                initArchiveCharts();
+            }
+            if (pageId === 'chat') {
+                checkNetwork();
+                initRecognition();
+            }
+            if (pageId === 'script-lab') {
+                // 清空输出
+                document.getElementById('response-output').innerHTML = '';
+            }
+            transitionTo('idle');
+        }
+
+        // 场景选择
+        document.querySelectorAll('.scene-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                document.querySelectorAll('.scene-tag').forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                currentScene = tag.dataset.scene;
+            });
+        });
+
+        function selectRole(card) {
+            document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            currentRole = card.dataset.role;
+            selectedDescription = card.dataset.description;
+            document.getElementById('start-dialog').classList.add('active');
+            document.getElementById('chat-title').textContent = `${currentRole} - ${currentScene}`;
+        }
+
+        function startDialog() {
+            if (!currentRole) return alert('请选择AI角色');
+            chatHistory = [];
+            messages = [];
+            document.getElementById('chat-messages').innerHTML = `<div class="message ai-message">（${currentRole} 微笑点头）根据${currentScene}场景，开始吧！请介绍自己。</div>`;
+            navigateTo('chat');
+        }
+
+        async function handleSendMessage(inputText = null, isVoice = false) {
+            const input = document.getElementById('user-input');
+            const message = inputText || input.value.trim();
+            if (!message) return;
+
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML += `<div class="message user-message">${message}</div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            chatHistory.push({ role: 'user', content: message });
+            messages.push({ role: 'user', content: message });
+
+            if (isVoice) transitionTo('recognizing');
+
+            transitionTo('thinking');
+
+            const aiMessageElement = chat.innerHTML += `<div class="message ai-message">思考中...</div>`;
+            let fullResponseContent = '';
+
+            const userMessageWithContext = `[训练场景]: ${currentScene}\n[角色名称]: ${currentRole}\n[角色简介]: ${selectedDescription}\n\n---\n\n我的发言如下，请根据你的角色进行回应：\n“${message}”`;
+            const apiMessages = [ ...messages, { role: 'user', content: userMessageWithContext, content_type: 'text', type: 'question' }];
+
+            try {
+                const response = await fetch(COZE_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${COZE_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bot_id: BOT_ID,
+                        user_id: USER_ID, 
+                        stream: true,
+                        additional_messages: apiMessages,
+                        parameters: {}
+                    }),
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let currentEvent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        messages.push({ role: 'assistant', content: fullResponseContent });
+                        transitionTo('idle');
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('event:')) {
+                            currentEvent = line.substring(6).trim();
+                        } else if (line.startsWith('data:')) {
+                            try {
+                                const dataJson = line.substring(5).trim();
+                                if (dataJson === '[DONE]') continue;
+                                const parsedData = JSON.parse(dataJson);
+                                
+                                if (currentEvent === 'conversation.message.delta' && parsedData.role === 'assistant' && parsedData.type === 'answer' && typeof parsedData.content === 'string') {
+                                    fullResponseContent += parsedData.content;
+                                    const aiMessages = document.querySelectorAll('.ai-message');
+                                    aiMessages[aiMessages.length - 1].textContent = fullResponseContent;
+                                    chat.scrollTop = chat.scrollHeight;
+                                } 
+                            } catch (e) {
+                                console.warn('Parse error:', e);
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('API error:', error);
+                transitionTo('idle');
+                const lastAiMsg = document.querySelectorAll('.ai-message')[document.querySelectorAll('.ai-message').length - 1];
+                if (lastAiMsg) lastAiMsg.textContent = '抱歉，网络错误，请重试。';
+            }
+        }
+
+        function endTraining() {
+            let historyString = "";
+            messages.forEach(msg => {
+                historyString += `${msg.role === 'user' ? '用户' : 'AI'}: "${msg.content}"\n\n`;
+            });
+            localStorage.setItem('dialogue_history_for_review', historyString.trim());
+            navigateTo('report');
+        }
+
+        // --- 报告生成函数 - 调整解析逻辑以处理文本或JSON ---
+        async function generateReview() {
+            const dialogueHistory = document.getElementById('history-input').value.trim();
+            if (!dialogueHistory) { 
+                alert("请输入对话历史记录！"); 
+                return; 
+            }
+            
+            const generateBtn = document.getElementById('generate-btn');
+            generateBtn.disabled = true;
+            generateBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 生成中...';
+            const reportOutput = document.getElementById('report-output');
+            reportOutput.style.display = 'none';
+            let accumulatedContentString = '';
+
+            try {
+                const response = await fetch(WORKFLOW_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${COZE_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        workflow_id: REVIEW_WORKFLOW_ID,
+                        user_id: USER_ID,
+                        stream: true,
+                        parameters: { "dialogue_history": dialogueHistory }
+                    }),
+                });
+                
+                if (!response.ok) {
+                     const errorBody = await response.text();
+                     throw new Error(`HTTP 错误！状态码: ${response.status}. 详情: ${errorBody}`);
+                }
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let currentEvent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('event:')) { 
+                            currentEvent = line.substring(6).trim(); 
+                        } 
+                        else if (line.startsWith('data:')) {
+                            try {
+                                const dataJson = line.substring(5).trim();
+                                if (dataJson === '[DONE]') continue;
+                                const parsedData = JSON.parse(dataJson);
+                                
+                                if (currentEvent === 'Message' && parsedData.content && typeof parsedData.content === 'string') {
+                                    accumulatedContentString += parsedData.content;
+                                }
+                            } catch (e) { 
+                                console.warn('Stream parse error:', e);
+                            }
+                        }
+                    }
+                }
+                
+                // 解析逻辑：优先尝试JSON in JSON，如果失败则假设为纯文本并手动解析
+                let innerResult = null;
+                if (accumulatedContentString) {
+                    try {
+                        const outerResult = JSON.parse(accumulatedContentString);
+                        if (outerResult.output && typeof outerResult.output === 'string') {
+                            innerResult = JSON.parse(outerResult.output);
+                        } else {
+                            innerResult = outerResult;
+                        }
+                    } catch (e) {
+                        // 假设为纯文本，手动解析示例格式
+                        innerResult = parseTextReport(accumulatedContentString);
+                    }
+
+                    if (innerResult) {
+                        displayReport(innerResult);
+                        saveReportToHistory(accumulatedContentString, innerResult);
+                        document.getElementById('trace-link-btn').classList.remove('hidden');
+                    } else {
+                        throw new Error('无法解析报告内容');
+                    }
+                } else {
+                    throw new Error('未收到报告内容');
+                }
+
+            } catch (error) {
+                console.error('Generate review error:', error);
+                alert(`生成报告失败：${error.message}`);
+            } finally {
+                generateBtn.disabled = false;
+                generateBtn.innerHTML = '生成报告';
+            }
+        }
+
+        // 手动解析文本报告（如用户示例）
+        function parseTextReport(text) {
+            const result = {};
+            const lines = text.split('\n');
+            let section = '';
+            let currentContent = '';
+            result.维度分析 = {};
+            lines.forEach(line => {
+                line = line.trim();
+                if (line.startsWith('【')) {
+                    if (section === '优势分析' || section === '改进建议') {
+                        result[section] = currentContent.trim();
+                        currentContent = '';
+                    }
+                    if (line.startsWith('【综合评价】')) {
+                        section = '综合评价';
+                    } else if (line.startsWith('【优势分析】')) {
+                        section = '优势分析';
+                    } else if (line.startsWith('【改进建议】')) {
+                        section = '改进建议';
+                    } else if (line.startsWith('【维度分析】')) {
+                        section = '维度分析';
+                    }
+                } else if (section === '综合评价' && line.startsWith('得分:')) {
+                    const match = line.match(/得分:\s*(\d+)\s*\((.+?)\)/);
+                    if (match) {
+                        result.综合得分 = parseInt(match[1]);
+                        result.得分评级 = match[2];
+                    }
+                } else if (section === '优势分析' || section === '改进建议') {
+                    currentContent += (currentContent ? ' ' : '') + line;
+                } else if (section === '维度分析' && line.includes(':')) {
+                    const parts = line.split(/:\s*/, 2);
+                    if (parts.length === 2) {
+                        const key = parts[0].trim();
+                        const value = parts[1].trim();
+                        result.维度分析[key] = value;
+                    }
+                }
+            });
+            if (section === '优势分析' || section === '改进建议') {
+                result[section] = currentContent.trim();
+            }
+            return result;
+        }
+
+        // 显示报告UI
+        function displayReport(result) {
+            document.getElementById('report-score').textContent = result.综合得分 || '-';
+            document.getElementById('report-level').textContent = result.得分评级 || '-';
+            document.getElementById('strengths').textContent = result.优势分析 || '暂无';
+            document.getElementById('improvements').textContent = result.改进建议 || '暂无';
+
+            // 维度显示
+            const dimensionsDiv = document.getElementById('dimensions');
+            dimensionsDiv.innerHTML = '';
+            if (result.维度分析) {
+                Object.entries(result.维度分析).forEach(([key, value]) => {
+                    const item = document.createElement('div');
+                    item.className = 'dimension-item';
+                    item.innerHTML = `<div class="dimension-label">${key}</div><div class="dimension-score">${value}</div>`;
+                    dimensionsDiv.appendChild(item);
+                });
+            }
+
+            // 雷达图
+            const ctx = document.getElementById('report-radar-chart').getContext('2d');
+            if (reportRadarChart) reportRadarChart.destroy();
+            const dimensionKeys = Object.keys(result.维度分析 || {});
+            const dimensionValues = dimensionKeys.map(key => parseInt(result.维度分析[key]) || 0);
+            reportRadarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: dimensionKeys,
+                    datasets: [{
+                        label: '维度得分',
+                        data: dimensionValues,
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: '#007bff',
+                        pointBackgroundColor: '#007bff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            document.getElementById('report-output').style.display = 'block';
+        }
+
+        function saveReportToHistory(reportText, parsedResult) {
+            let history = JSON.parse(localStorage.getItem('all_review_reports')) || [];
+            const score = parsedResult.综合得分 || extractScore(reportText);
+            history.push({
+                timestamp: new Date().toLocaleString('zh-CN'),
+                raw: reportText,
+                parsed: parsedResult,
+                score: score
+            });
+            localStorage.setItem('all_review_reports', JSON.stringify(history));
+            updateAverageScoreBar();
+        }
+
+        function extractScore(text) {
+            const match = text.match(/得分:\s*(\d+)/);
+            return match ? parseInt(match[1]) : 0;
+        }
+
+        // 报告页面事件
+        document.addEventListener('DOMContentLoaded', () => {
+            if (document.getElementById('generate-btn')) {
+                document.getElementById('generate-btn').addEventListener('click', generateReview);
+            }
+            if (document.getElementById('trace-link-btn')) {
+                document.getElementById('trace-link-btn').addEventListener('click', () => { navigateTo('archive'); });
+            }
+        });
+
+        async function callCozeScriptApi() {
+            const scriptText = document.getElementById('script-text-input').value.trim();
+            const responseOutput = document.getElementById('response-output');
+            if (!scriptText) return;
+
+            responseOutput.innerHTML = '<p><i class="fas fa-spinner fa-spin"></i> 分析中...</p>';
+
+            try {
+                const response = await fetch(WORKFLOW_API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${COZE_API_KEY}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        workflow_id: SCRIPT_WORKFLOW_ID,
+                        stream: true,
+                        parameters: {
+                            script_text: scriptText
+                        }
+                    })
+                });
+
+                if (!response.ok) throw new Error('API请求失败');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let fullContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            try {
+                                const dataJson = line.substring(5).trim();
+                                if (dataJson === '[DONE]') continue;
+                                const parsedData = JSON.parse(dataJson);
+                                if (parsedData.content) fullContent += parsedData.content;
+                            } catch (e) {
+                                console.warn('Script parse error:', e);
+                            }
+                        }
+                    }
+                    responseOutput.innerHTML = `<p><i class="fas fa-robot"></i> ${fullContent}</p>`;
+                }
+
+                // 尝试格式化为结构化输出
+                try {
+                    const finalJson = JSON.parse(fullContent);
+                    displayScriptResult(finalJson);
+                } catch (e) {
+                    responseOutput.innerHTML = `<h4><i class="fas fa-info-circle"></i> 分析结果</h4><p>${fullContent}</p>`;
+                }
+            } catch (error) {
+                console.error('Script API error:', error);
+                responseOutput.innerHTML = `<p style="color: red;"><i class="fas fa-exclamation-triangle"></i> 分析失败：${error.message}</p>`;
+            }
+        }
+
+        function displayScriptResult(json) {
+            const output = document.getElementById('response-output');
+            output.innerHTML = `
+                <h4><i class="fas fa-star"></i> 优化建议</h4>
+                <p>${json.suggestions || '暂无'}</p>
+                <h4><i class="fas fa-edit"></i> 优化后讲稿</h4>
+                <p>${json.optimizedScript || '暂无'}</p>
+            `;
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('all_review_reports')) || [];
+            const historyContainer = document.getElementById('history-container');
+            historyContainer.innerHTML = '';
+            if (history.length > 0) {
+                history.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.innerHTML = `
+                        <strong>报告 #${index + 1} - ${item.timestamp} (得分: ${item.score})</strong>
+                        <br><small>${(item.parsed.优势分析 || '').substring(0, 100)}...</small>
+                    `;
+                    historyContainer.appendChild(li);
+                });
+                allReportsText = history.map(item => item.raw).join('\n\n');
+            } else {
+                historyContainer.innerHTML = '<li class="history-item">暂无历史报告</li>';
+            }
+            // 显示轨迹输出如果有
+            const traceOutput = document.getElementById('trace-output');
+            if (traceOutput.textContent) traceOutput.style.display = 'block';
+        }
+
+        async function callTraceApi() {
+            if (!allReportsText) {
+                alert('暂无历史数据，无法分析轨迹');
+                return;
+            }
+
+            const traceOutput = document.getElementById('trace-output');
+            traceOutput.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 分析成长轨迹中...';
+            traceOutput.style.display = 'block';
+
+            try {
+                const response = await fetch(WORKFLOW_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${COZE_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        workflow_id: TRACE_WORKFLOW_ID,
+                        user_id: USER_ID,
+                        stream: true,
+                        parameters: { "input": allReportsText }
+                    }),
+                });
+
+                if (!response.ok) throw new Error('轨迹API请求失败');
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let fullTraceContent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('data:')) {
+                            try {
+                                const dataJson = line.substring(5).trim();
+                                if (dataJson === '[DONE]') continue;
+                                const parsedData = JSON.parse(dataJson);
+                                if (parsedData.data && typeof parsedData.data.content === 'string') {
+                                    fullTraceContent += parsedData.data.content;
+                                }
+                            } catch (e) {
+                                console.warn('Trace parse error:', e);
+                            }
+                        }
+                    }
+                    traceOutput.innerHTML = fullTraceContent || '<i class="fas fa-spinner fa-spin"></i> 分析中...';
+                }
+            } catch (error) {
+                console.error('Trace API error:', error);
+                traceOutput.innerHTML = `<p style="color: red;"><i class="fas fa-exclamation-triangle"></i> 分析失败：${error.message}</p>`;
+            }
+        }
+
+        function clearHistory() {
+            if (confirm("确认清空历史？此操作不可逆！")) {
+                localStorage.removeItem('all_review_reports');
+                allReportsText = '';
+                loadHistory();
+                initArchiveCharts(); // 重新初始化图表
+                document.getElementById('trace-output').style.display = 'none';
+                updateAverageScoreBar();
+                alert('历史已清空');
+            }
+        }
+
+        function initArchiveCharts() {
+            const history = JSON.parse(localStorage.getItem('all_review_reports')) || [];
+            const labels = history.map(item => item.timestamp.split(' ')[0]); // 只取日期
+            const scores = history.map(item => item.score || 0);
+
+            // 线图 - 综合评价分数趋势
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            if (lineChart) lineChart.destroy();
+            lineChart = new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: labels.length ? labels : ['2025-09-01', '2025-09-10', '2025-09-20'],
+                    datasets: [{
+                        label: '综合评价分数',
+                        data: scores.length ? scores : [60, 75, 85],
+                        borderColor: '#ff9500',
+                        backgroundColor: 'rgba(255, 149, 0, 0.1)',
+                        tension: 0.1,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+
+            // 雷达图 - 使用最新和最早数据对比
+            let latestData = {语言:80, 逻辑:85, 内容:90, 情绪:75};
+            let earliestData = {语言:50, 逻辑:60, 内容:55, 情绪:45};
+            if (history.length > 0) {
+                const latest = history[history.length - 1].parsed || {};
+                const earliest = history[0].parsed || {};
+                if (latest.维度分析) {
+                    latestData = latest.维度分析;
+                }
+                if (earliest.维度分析) {
+                    earliestData = earliest.维度分析;
+                }
+            }
+            const keys = Object.keys(latestData);
+            const latestValues = keys.map(key => parseInt(latestData[key]) || 0);
+            const earliestValues = keys.map(key => parseInt(earliestData[key]) || 0);
+
+            const radarCtx = document.getElementById('archiveRadarChart').getContext('2d');
+            if (archiveRadarChart) archiveRadarChart.destroy();
+            archiveRadarChart = new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: keys,
+                    datasets: [{
+                        label: '首次诊断',
+                        data: earliestValues,
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: '#007bff'
+                    }, {
+                        label: '当前能力',
+                        data: latestValues,
+                        backgroundColor: 'rgba(255, 149, 0, 0.2)',
+                        borderColor: '#ff9500'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100
+                        }
+                    }
+                }
+            });
+        }
+
+        // 初始化
+        updateAverageScoreBar();
+        checkNetwork();
+        initRecognition();
+        loadHistory();
+        initArchiveCharts();
+    </script>
+</body>
+</html>

@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CommunicAI - AI沟通教练</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background: url('https://source.unsplash.com/1600x900/?technology,blue') no-repeat center center/cover;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 0;
+            overflow-y: auto;
+            color: #333;
+        }
+
+        .app-container {
+            max-width: 100vw;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 0;
+            box-shadow: none;
+            overflow: hidden;
+        }
+
+        .page {
+            display: none;
+            padding: 15px;
+        }
+
+        .page.active {
+            display: block;
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border-radius: 0;
+        }
+
+        .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            object-fit: cover;
+        }
+
+        .user-info h2 {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .confidence-bar {
+            margin-top: 5px;
+            width: 100%;
+            height: 8px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .confidence-bar div {
+            width: 75%;
+            height: 100%;
+            background: #ff9500;
+            transition: width 0.5s ease-in-out;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .card {
+            background: linear-gradient(135deg, #fff, #f9f9f9);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .card i {
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            color: #007bff;
+        }
+
+        .card h3 {
+            font-size: 0.9rem;
+            color: #333;
+        }
+
+        .card img {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 10px;
+        }
+
+        .card.academic { background: linear-gradient(135deg, #e6f0ff, #d1e3ff); }
+        .card.interview { background: linear-gradient(135deg, #fff4e6, #ffe6cc); }
+        .card.cross-culture { background: linear-gradient(135deg, #e6fff0, #ccffe6); }
+        .card.practice { background: linear-gradient(135deg, #f0e6ff, #e6ccff); }
+
+        /* 报告页样式 */
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, #f0f0f0, #e0e0e0);
+            padding: 15px;
+            border-radius: 10px;
+        }
+
+        .score {
+            font-size: 2rem;
+            color: #ff9500;
+            font-weight: bold;
+        }
+
+        .level {
+            font-size: 1rem;
+            color: #666;
+        }
+
+        .radar-chart {
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .analysis-section {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .analysis-section h4 {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            color: #007bff;
+            display: flex;
+            align-items: center;
+        }
+
+        .analysis-section h4 i {
+            margin-right: 10px;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: space-around;
+            gap: 10px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* AI角色配置页 */
+        .scene-selector {
+            display: flex;
+            overflow-x: auto;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            gap: 10px;
+        }
+
+        .scene-tag {
+            padding: 8px 15px;
+            background: linear-gradient(135deg, #e6f0ff, #d1e3ff);
+            border-radius: 20px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.3s;
+        }
+
+        .scene-tag.active {
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+        }
+
+        .role-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .role-card {
+            background: linear-gradient(135deg, #fff, #f9f9f9);
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .role-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .role-card.selected {
+            border: 2px solid #007bff;
+        }
+
+        .role-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin-bottom: 10px;
+        }
+
+        .role-name {
+            font-size: 1rem;
+            font-weight: bold;
+        }
+
+        .role-desc {
+            font-size: 0.8rem;
+            color: #666;
+        }
+
+        .role-difficulty {
+            font-size: 0.8rem;
+            color: #ff9500;
+        }
+
+        .start-btn {
+            margin-top: 20px;
+            padding: 15px;
+            background: linear-gradient(90deg, #ff9500, #e68900);
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            cursor: pointer;
+            display: none;
+            transition: transform 0.3s;
+        }
+
+        .start-btn.active {
+            display: block;
+        }
+
+        .start-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* 对话界面 */
+        .chat-container {
+            height: calc(100vh - 200px);
+            overflow-y: auto;
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 10px;
+            max-width: 80%;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .ai-message {
+            background: linear-gradient(135deg, #e6f0ff, #d1e3ff);
+            align-self: flex-start;
+        }
+
+        .user-message {
+            background: linear-gradient(135deg, #ffe6cc, #fff4e6);
+            align-self: flex-end;
+            text-align: right;
+            margin-left: auto;
+        }
+
+        .input-area {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            padding: 10px;
+            border-radius: 20px;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            bottom: 0;
+            width: 100%;
+        }
+
+        .text-input {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 20px;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+
+        .record-btn {
+            background: #ff9500;
+            color: #fff;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.5rem;
+            margin-left: 10px;
+        }
+
+        .record-btn.recording {
+            background: #dc3545;
+        }
+
+        .status-bar {
+            background: #f9f9f9;
+            padding: 8px;
+            border-radius: 10px;
+            text-align: center;
+            font-size: 0.9rem;
+            color: #007bff;
+            margin-bottom: 10px;
+            display: none;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        .status-bar.show {
+            display: block;
+        }
+
+        .offline-notice {
+            background: linear-gradient(135deg, #fff3cd, #ffe6cc);
+            color: #856404;
+            padding: 10px;
+            border-radius: 10px;
+            text-align: center;
+            margin-bottom: 10px;
+            display: none;
+        }
+
+        /* 讲稿实验室 */
+        .script-textarea {
+            width: 100%;
+            height: 200px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            background: #fff;
+        }
+
+        .analyze-btn {
+            padding: 15px;
+            background: linear-gradient(90deg, #007bff, #00b7eb);
+            color: #fff;
+            text-align: center;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .analysis-result {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* 成长档案 */
+        .line-chart {
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .history-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .history-item {
+            background: linear-gradient(135deg, #f9f9f9, #fff);
+            padding: 10px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+
+        /* 响应式优化 */
+        @media (max-width: 400px) {
+            body {
+                padding: 0;
+            }
+            .app-container {
+                border-radius: 0;
+            }
+            .btn, .analyze-btn, .send-btn, .start-btn {
+                padding: 12px;
+                font-size: 1rem;
+            }
+            .input-area {
+                padding: 8px;
+            }
+            .chat-container {
+                height: calc(100vh - 150px);
+            }
+            .grid {
+                gap: 10px;
+            }
+            .card {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 首页 -->
+        <div id="home" class="page active">
+            <div class="header">
+                <i class="fas fa-user-circle fa-2x avatar"></i>
+                <div class="user-info">
+                    <h2>欢迎，Z世代沟通者</h2>
+                    <p>自信度指数</p>
+                    <div class="confidence-bar">
+                        <div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid">
+                <div class="card academic" onclick="navigateTo('script-lab')">
+                    <i class="fas fa-book fa-2x"></i>
+                    <h3>讲稿实验室</h3>
+                </div>
+                <div class="card interview" onclick="navigateTo('role-config')">
+                    <i class="fas fa-briefcase fa-2x"></i>
+                    <h3>AI角色训练营</h3>
+                </div>
+                <div class="card cross-culture" onclick="navigateTo('report')">
+                    <i class="fas fa-globe fa-2x"></i>
+                    <h3>复盘中心</h3>
+                </div>
+                <div class="card practice" onclick="navigateTo('archive')">
+                    <i class="fas fa-microphone fa-2x"></i>
+                    <h3>成长档案</h3>
+                </div>
+            </div>
+        </div>
+
+        <!-- 沟通能力诊断报告页 (复盘中心) -->
+        <div id="report" class="page">
+            <div id="report-content">
+                <div class="report-header">
+                    <h2>沟通能力诊断报告</h2>
+                    <p class="score">85/100</p>
+                    <p class="level">优秀水平</p>
+                </div>
+                <div class="radar-chart">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="analysis-section">
+                    <h4><i class="fas fa-check-circle"></i> 优势分析</h4>
+                    <p>语言表达丰富，逻辑清晰。</p>
+                </div>
+                <div class="analysis-section">
+                    <h4><i class="fas fa-exclamation-circle"></i> 待改进点</h4>
+                    <p>减少口语化词汇使用。</p>
+                </div>
+                <div class="analysis-section">
+                    <h4><i class="fas fa-lightbulb"></i> 优化建议</h4>
+                    <p>替换“然后”为“因此”。</p>
+                </div>
+            </div>
+            <div class="buttons">
+                <div class="btn" onclick="savePDF()"><i class="fas fa-save"></i> 保存PDF</div>
+                <div class="btn" onclick="shareAchievement()"><i class="fas fa-share-alt"></i> 分享成就</div>
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- AI角色训练配置页 -->
+        <div id="role-config" class="page">
+            <h2>选择训练场景</h2>
+            <div class="scene-selector">
+                <div class="scene-tag active" data-scene="研究生复试面试">研究生复试面试</div>
+                <div class="scene-tag" data-scene="论文答辩">论文答辩</div>
+                <div class="scene-tag" data-scene="压力面试">压力面试</div>
+                <div class="scene-tag" data-scene="社团竞选">社团竞选</div>
+                <div class="scene-tag" data-scene="跨文化交流">跨文化交流</div>
+                <div class="scene-tag" data-scene="求职面试">求职面试</div>
+                <div class="scene-tag" data-scene="学术汇报">学术汇报</div>
+            </div>
+            <h2>选择AI角色</h2>
+            <div class="role-grid">
+                <div class="role-card" data-role="严厉导师" data-description="你的任务是扮演一位严厉的导师，对我进行深度追问，挑战我知识和逻辑上的盲区。" onclick="selectRole(this)">
+                    <i class="fas fa-chalkboard-teacher fa-3x role-avatar"></i>
+                    <p class="role-name">严厉导师</p>
+                    <p class="role-desc">深度追问，挑战盲区</p>
+                    <p class="role-difficulty">难度：高</p>
+                </div>
+                <div class="role-card" data-role="友善学长" data-description="你的任务是扮演一位友善的学长，用温暖和鼓励的语气为我提供指导，帮助我增强自信。" onclick="selectRole(this)">
+                    <i class="fas fa-user-graduate fa-3x role-avatar"></i>
+                    <p class="role-name">友善学长</p>
+                    <p class="role-desc">温暖指导，增强自信</p>
+                    <p class="role-difficulty">难度：中</p>
+                </div>
+                <div class="role-card" data-role="专业HR" data-description="你的任务是扮演一位专业的HR，对我进行一场高压面试，考察我的专业能力和临场反应。" onclick="selectRole(this)">
+                    <i class="fas fa-briefcase fa-3x role-avatar"></i>
+                    <p class="role-name">专业HR</p>
+                    <p class="role-desc">高压面试，磨练反应</p>
+                    <p class="role-difficulty">难度：高</p>
+                </div>
+                <div class="role-card" data-role="国际友人" data-description="你的任务是扮演一位热情的国际友人，与我进行跨文化交流，帮助我拓展国际视野，锻炼我的沟通能力。" onclick="selectRole(this)">
+                    <i class="fas fa-globe-americas fa-3x role-avatar"></i>
+                    <p class="role-name">国际友人</p>
+                    <p class="role-desc">跨文化交流，拓展视野</p>
+                    <p class="role-difficulty">难度：中</p>
+                </div>
+            </div>
+            <div class="start-btn" id="start-dialog" onclick="startDialog()">开始对话</div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- 对话界面 (AI角色训练营) -->
+        <div id="chat" class="page">
+            <h2 id="chat-title">AI对话练习</h2>
+            <div class="offline-notice" id="offline-notice">网络连接缓慢，已切换至文本模式</div>
+            <div class="status-bar" id="status-bar"></div>
+            <div class="chat-container" id="chat-messages">
+                <div class="message ai-message">欢迎开始训练！请介绍一下自己。</div>
+            </div>
+            <div class="input-area">
+                <button class="record-btn" id="record-btn" onclick="toggleRecording()" title="录音"><i class="fas fa-microphone"></i></button>
+                <input type="text" id="user-input" class="text-input" placeholder="输入你的回复...">
+                <div class="send-btn" onclick="handleSendMessage()"><i class="fas fa-paper-plane"></i></div>
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="endTraining()">结束训练，查看复盘</div>
+            <div class="btn" style="margin-top: 10px;" onclick="navigateTo('role-config')">返回配置</div>
+        </div>
+
+        <!-- 讲稿实验室 -->
+        <div id="script-lab" class="page">
+            <h2>讲稿实验室</h2>
+            <textarea class="script-textarea" id="script-text-input" placeholder="输入或粘贴你的讲稿..."></textarea>
+            <div class="analyze-btn" onclick="callCozeScriptApi()">分析并优化</div>
+            <div class="analysis-result" id="response-output">
+                <!-- 结果将在这里显示 -->
+            </div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+
+        <!-- 个人成长档案中心 -->
+        <div id="archive" class="page">
+            <h2>成长档案</h2>
+            <div class="line-chart">
+                <canvas id="lineChart"></canvas>
+            </div>
+            <div class="radar-chart">
+                <canvas id="archiveRadarChart"></canvas>
+            </div>
+            <h4>历史训练记录</h4>
+            <ul class="history-list" id="history-container">
+                <li class="history-item">2025-09-20: 论文答辩 - 得分: 80</li>
+                <li class="history-item">2025-09-19: 压力面试 - 得分: 75</li>
+            </ul>
+            <div class="btn" style="margin-top: 20px;" onclick="callTraceApi()">分析成长轨迹</div>
+            <div class="btn" style="margin-top: 10px;" onclick="clearHistory()">清空历史</div>
+            <div class="analysis-result" id="trace-output"></div>
+            <div class="btn" style="margin-top: 20px;" onclick="navigateTo('home')">返回首页</div>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let currentScene = '研究生复试面试';
+        let currentRole = '';
+        let selectedRoleCard = null;
+        let recognition = null;
+        let isRecording = false;
+        let chatHistory = [];
+        let messages = [];
+        let selectedDescription = '';
+        let allReportsText = '';
+        const COZE_API_KEY = "pat_eCLM7GUboyGvwXxxGWBF7AtVTW6AUWnwuKZn8uqQVJbzW8ibaD6brNMYhg3re3YP";
+        const BOT_ID = "7551988709244485674";
+        const USER_ID = "123456789";
+        const COZE_API_URL = "https://api.coze.cn/v3/chat";
+        const TRACE_WORKFLOW_ID = "7552068874451025970";
+        const REVIEW_WORKFLOW_ID = "7551760177268162570";
+        const WORKFLOW_API_URL = "https://api.coze.cn/v1/workflow/stream_run";
+        const SCRIPT_WORKFLOW_ID = "7551990489299451946";
+
+        // 状态机
+        const states = {
+            idle: { enter: () => updateStatus(''), show: false },
+            recording: { enter: () => updateStatus('录音中... <span class="loading"></span>'), show: true },
+            recognizing: { enter: () => updateStatus('识别中... <span class="loading"></span>'), show: true },
+            thinking: { enter: () => updateStatus('AI思考中... <span class="loading"></span>'), show: true },
+            playing: { enter: () => updateStatus('播放中...'), show: true }
+        };
+
+        let currentState = 'idle';
+        function transitionTo(newState) {
+            currentState = newState;
+            states[newState].enter();
+        }
+
+        function updateStatus(html) {
+            const statusBar = document.getElementById('status-bar');
+            if (statusBar) {
+                statusBar.innerHTML = html;
+                statusBar.classList.toggle('show', !!html);
+            }
+        }
+
+        // 网络检查
+        function checkNetwork() {
+            const notice = document.getElementById('offline-notice');
+            const recordBtn = document.getElementById('record-btn');
+            if (!navigator.onLine) {
+                notice.style.display = 'block';
+                recordBtn.style.display = 'none';
+                transitionTo('idle');
+            } else {
+                notice.style.display = 'none';
+                recordBtn.style.display = 'inline-block';
+            }
+        }
+
+        window.addEventListener('online', checkNetwork);
+        window.addEventListener('offline', checkNetwork);
+
+        // 语音识别
+        function initRecognition() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert('您的浏览器不支持语音识别。请使用Chrome或Edge浏览器。');
+                return;
+            }
+
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN';
+            recognition.interimResults = false;
+            recognition.continuous = false;
+            recognition.maxAlternatives = 1;
+
+            recognition.onstart = () => {
+                console.log('录音开始');
+                transitionTo('recording');
+                isRecording = true;
+                document.getElementById('record-btn').classList.add('recording');
+            };
+
+            recognition.onresult = (event) => {
+                console.log('识别结果:', event.results[0][0].transcript);
+                transitionTo('recognizing');
+                const transcript = event.results[0][0].transcript;
+                document.getElementById('user-input').value = transcript;
+                handleSendMessage(transcript, true);
+            };
+
+            recognition.onend = () => {
+                console.log('录音结束');
+                transitionTo('idle');
+                isRecording = false;
+                document.getElementById('record-btn').classList.remove('recording');
+            };
+
+            recognition.onerror = (event) => {
+                console.error('识别错误详情:', event.error);
+                transitionTo('idle');
+                isRecording = false;
+                document.getElementById('record-btn').classList.remove('recording');
+                
+                let errorMsg = '识别出错，请重试。';
+                switch (event.error) {
+                    case 'not-allowed':
+                        errorMsg = '麦克风权限被拒绝。请在浏览器设置中允许麦克风访问。';
+                        break;
+                    case 'no-speech':
+                        errorMsg = '未检测到语音。请确保麦克风正常并大声说话。';
+                        break;
+                    case 'network':
+                        errorMsg = '网络问题导致识别失败。请检查网络连接。';
+                        break;
+                    case 'service-not-allowed':
+                        errorMsg = '语音服务不可用。请使用HTTPS页面或Chrome浏览器。';
+                        break;
+                    default:
+                        errorMsg = `错误类型: ${event.error}。请重试或切换到文本输入。`;
+                }
+                alert(errorMsg);
+            };
+
+            // 新增：权限检查和请求
+            checkMicrophonePermission();
+        }
+
+        // 新增：检查/请求麦克风权限函数
+        async function checkMicrophonePermission() {
+            try {
+                // 先用Permission API检查状态（如果支持）
+                if (navigator.permissions && navigator.permissions.query) {
+                    const permission = await navigator.permissions.query({ name: 'microphone' });
+                    if (permission.state === 'granted') {
+                        console.log('麦克风权限已授权');
+                        return true;
+                    } else if (permission.state === 'denied') {
+                        alert('麦克风权限被拒绝。请在浏览器设置中允许。');
+                        return false;
+                    }
+                }
+
+                // 如果未检查或prompt状态，用getUserMedia请求权限
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                stream.getTracks().forEach(track => track.stop());  // 立即停止，只为权限
+                console.log('麦克风权限已授权');
+                return true;
+            } catch (err) {
+                console.error('权限请求失败:', err.name);
+                if (err.name === 'NotAllowedError') {
+                    alert('麦克风权限被拒绝。请在浏览器设置中允许麦克风访问，然后重试。');
+                } else if (err.name === 'NotFoundError') {
+                    alert('未找到麦克风硬件。请检查设备。');
+                } else {
+                    alert('权限请求失败。请重试或使用文本输入。');
+                }
+                return false;
+            }
+        }
+
+        // 录音切换（替换原toggleRecording函数）
+        async function toggleRecording() {
+            if (!recognition) {
+                alert('语音识别未初始化。请刷新页面重试。');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+                return;
+            }
+
+            // 新增：录音前检查/请求权限
+            const hasPermission = await checkMicrophonePermission();
+            if (!hasPermission) {
+                return;  // 权限未授权，停止
+            }
+
+            // 检查网络
+            if (!navigator.onLine) {
+                alert('网络不稳定，无法使用录音。请切换到文本输入。');
+                return;
+            }
+
+            recognition.start();
+        }
+
+        // 导航
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            if (pageId === 'report') {
+                loadReportFromCache();
+                initRadarChart();
+            }
+            if (pageId === 'archive') {
+                loadHistory();
+                initArchiveCharts();
+            }
+            if (pageId === 'chat') {
+                checkNetwork();
+                initRecognition();
+            }
+            transitionTo('idle');
+        }
+
+        // 场景选择
+        document.querySelectorAll('.scene-tag').forEach(tag => {
+            tag.addEventListener('click', () => {
+                document.querySelectorAll('.scene-tag').forEach(t => t.classList.remove('active'));
+                tag.classList.add('active');
+                currentScene = tag.dataset.scene;
+            });
+        });
+
+        function selectRole(card) {
+            document.querySelectorAll('.role-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            currentRole = card.dataset.role;
+            selectedDescription = card.dataset.description;
+            document.getElementById('start-dialog').classList.add('active');
+            document.getElementById('chat-title').textContent = `${currentRole} - ${currentScene}`;
+        }
+
+        function startDialog() {
+            if (!currentRole) return alert('请选择AI角色');
+            chatHistory = [];
+            messages = [];
+            document.getElementById('chat-messages').innerHTML = `<div class="message ai-message">（${currentRole} 微笑点头）根据${currentScene}场景，开始吧！请介绍自己。</div>`;
+            navigateTo('chat');
+        }
+
+        async function handleSendMessage(inputText = null, isVoice = false) {
+            const input = document.getElementById('user-input');
+            const message = inputText || input.value.trim();
+            if (!message) return;
+
+            const chat = document.getElementById('chat-messages');
+            chat.innerHTML += `<div class="message user-message">${message}</div>`;
+            input.value = '';
+            chat.scrollTop = chat.scrollHeight;
+
+            chatHistory.push({ role: 'user', content: message });
+            messages.push({ role: 'user', content: message });
+
+            if (isVoice) transitionTo('recognizing');
+
+            transitionTo('thinking');
+
+            // API 调用 (保持不变)
+            const aiMessageElement = chat.innerHTML += `<div class="message ai-message">思考中...</div>`;
+            let fullResponseContent = '';
+
+            const userMessageWithContext = `[训练场景]: ${currentScene}\n[角色名称]: ${currentRole}\n[角色简介]: ${selectedDescription}\n\n---\n\n我的发言如下，请根据你的角色进行回应：\n“${message}”`;
+            const apiMessages = [ ...messages, { role: 'user', content: userMessageWithContext, content_type: 'text', type: 'question' }];
+
+            try {
+                const response = await fetch(COZE_API_URL, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${COZE_API_KEY}`, 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        bot_id: BOT_ID,
+                        user_id: USER_ID, 
+                        stream: true,
+                        additional_messages: apiMessages,
+                        parameters: {}
+                    }),
+                });
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let currentEvent = '';
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        messages.push({ role: 'assistant', content: fullResponseContent });
+                        transitionTo('idle');
+                        break;
+                    }
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n');
+
+                    for (const line of lines) {
+                        if (line.startsWith('event:')) {
+                            currentEvent = line.substring(6).trim();
+                        } else if (line.startsWith('data:')) {
+                            try {
+                                const dataJson = line.substring(5).trim();
+                                if (dataJson === '[DONE]') continue;
+                                const parsedData = JSON.parse(dataJson);
+                                
+                                if (currentEvent === 'conversation.message.delta' && parsedData.role === 'assistant' && parsedData.type === 'answer' && typeof parsedData.content === 'string') {
+                                    fullResponseContent += parsedData.content;
+                                    // 更新AI消息
+                                    const aiMessages = document.querySelectorAll('.ai-message');
+                                    aiMessages[aiMessages.length - 1].textContent = fullResponseContent;
+                                    chat.scrollTop = chat.scrollHeight;
+                                } 
+                            } catch (e) {}
+                        }
+                    }
+                }
+            } catch (error) {
+                transitionTo('idle');
+            }
+        }
+
+        function endTraining() {
+            let historyString = "";
+            messages.forEach(msg => {
+                historyString += `${msg.role === 'user' ? '用户' : 'AI'}: "${msg.content}"\n\n`;
+            });
+            localStorage.setItem('dialogue_history_for_review', historyString.trim());
+            navigateTo('report');
+            generateReview();
+        }
+
+        async function generateReview() {
+            const dialogueHistory = localStorage.getItem('dialogue_history_for_review');
+            if (!dialogueHistory) return;
+
+            let accumulatedContentString = '';
+
+            const response = await fetch(WORKFLOW_API_URL, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${COZE_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workflow_id: REVIEW_WORKFLOW_ID,
+                    user_id: USER_ID,
+                    stream: true,
+                    parameters: { "dialogue_history": dialogueHistory }
+                }),
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let currentEvent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('event:')) { currentEvent = line.substring(6).trim(); } 
+                    else if (line.startsWith('data:')) {
+                        try {
+                            const dataJson = line.substring(5).trim();
+                            if (dataJson === '[DONE]') continue;
+                            const parsedData = JSON.parse(dataJson);
+                            
+                            if (currentEvent === 'Message' && parsedData.content && typeof parsedData.content === 'string') {
+                                accumulatedContentString += parsedData.content;
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            try {
+                const outerResult = JSON.parse(accumulatedContentString);
+                if (outerResult.output) {
+                    const innerResult = JSON.parse(outerResult.output);
+                    document.querySelector('.score').textContent = `${innerResult.综合得分}/100`;
+                    document.querySelector('.level').textContent = innerResult.得分评级;
+                    document.querySelectorAll('.analysis-section p')[0].textContent = innerResult.优势分析;
+                    document.querySelectorAll('.analysis-section p')[1].textContent = innerResult.改进建议;
+                    // 更新维度
+                    const radarData = [innerResult.维度分析.语言表达, innerResult.维度分析.逻辑结构, innerResult.维度分析.情绪控制, innerResult.维度分析.内容匹配, innerResult.维度分析.互动效果];
+                    window.reportRadar.data.datasets[0].data = radarData;
+                    window.reportRadar.update();
+                    saveReportToHistory(JSON.stringify(innerResult, null, 2));
+                }
+            } catch (e) {}
+            localStorage.removeItem('dialogue_history_for_review');
+        }
+
+        function saveReportToHistory(reportText) {
+            let history = JSON.parse(localStorage.getItem('all_review_reports')) || [];
+            history.push({
+                timestamp: new Date().toLocaleString('zh-CN'),
+                report: reportText
+            });
+            localStorage.setItem('all_review_reports', JSON.stringify(history));
+        }
+
+        function loadReportFromCache() {
+            // 类似之前
+            const cached = localStorage.getItem('reportCache');
+            if (cached) {
+                const data = JSON.parse(cached);
+                document.querySelector('.score').textContent = `${data.score}/100`;
+                document.querySelector('.level').textContent = data.level;
+                document.querySelectorAll('.analysis-section p')[0].textContent = data.analysis.strengths;
+                document.querySelectorAll('.analysis-section p')[1].textContent = data.analysis.improvements;
+                document.querySelectorAll('.analysis-section p')[2].textContent = data.analysis.suggestions;
+                window.reportRadar.data.datasets[0].data = data.radarData;
+                window.reportRadar.update();
+            }
+        }
+
+        async function callCozeScriptApi() {
+            const scriptText = document.getElementById('script-text-input').value.trim();
+            const responseOutput = document.getElementById('response-output');
+            if (!scriptText) return;
+
+            responseOutput.textContent = '分析中...';
+
+            const response = await fetch(WORKFLOW_API_URL, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${COZE_API_KEY}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    workflow_id: SCRIPT_WORKFLOW_ID,
+                    stream: true,
+                    parameters: {
+                        script_text: scriptText
+                    }
+                })
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let fullContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data:')) {
+                        try {
+                            const dataJson = line.substring(5);
+                            const parsedData = JSON.parse(dataJson);
+                            if (parsedData.content) fullContent += parsedData.content;
+                        } catch (e) {}
+                    }
+                }
+                responseOutput.textContent = fullContent;
+            }
+
+            try {
+                const finalJson = JSON.parse(fullContent);
+                responseOutput.textContent = JSON.stringify(finalJson, null, 2);
+            } catch (e) {}
+        }
+
+        function loadHistory() {
+            const history = JSON.parse(localStorage.getItem('all_review_reports')) || [];
+            const historyContainer = document.getElementById('history-container');
+            historyContainer.innerHTML = '';
+            if (history.length > 0) {
+                let reportStrings = [];
+                history.forEach((item, index) => {
+                    const li = document.createElement('li');
+                    li.className = 'history-item';
+                    li.innerHTML = `<strong>报告 #${index + 1} - ${item.timestamp}</strong><br>${item.report}`;
+                    historyContainer.appendChild(li);
+                    reportStrings.push(`--- 复盘报告 ${index + 1} (${item.timestamp}) ---\n${item.report}`);
+                });
+                allReportsText = reportStrings.join('\n\n');
+            } else {
+                historyContainer.innerHTML = '<li class="history-item">暂无历史报告</li>';
+            }
+        }
+
+        async function callTraceApi() {
+            if (!allReportsText) return;
+
+            const traceOutput = document.getElementById('trace-output');
+            traceOutput.textContent = '分析中...';
+
+            const response = await fetch(WORKFLOW_API_URL, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${COZE_API_KEY}`, 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    workflow_id: TRACE_WORKFLOW_ID,
+                    user_id: USER_ID,
+                    stream: true,
+                    parameters: { "input": allReportsText }
+                }),
+            });
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let fullTraceContent = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data:')) {
+                        try {
+                            const dataJson = line.substring(5).trim();
+                            const parsedData = JSON.parse(dataJson);
+                            if (parsedData.data && typeof parsedData.data.content === 'string') {
+                                fullTraceContent += parsedData.data.content;
+                            }
+                        } catch (e) {}
+                    }
+                }
+                traceOutput.textContent = fullTraceContent;
+            }
+        }
+
+        function clearHistory() {
+            if (confirm("确认清空历史？")) {
+                localStorage.removeItem('all_review_reports');
+                loadHistory();
+            }
+        }
+
+        let reportRadar;
+        function initRadarChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            reportRadar = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['语言表达', '逻辑结构', '情绪控制', '内容匹配', '互动效果'],
+                    datasets: [{
+                        label: '您的能力',
+                        data: [80, 85, 70, 90, 75],
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: '#007bff',
+                        borderWidth: 2
+                    }, {
+                        label: '平均水平',
+                        data: [70, 75, 65, 80, 70],
+                        backgroundColor: 'rgba(255, 149, 0, 0.2)',
+                        borderColor: '#ff9500',
+                        borderWidth: 2
+                    }]
+                },
+                options: { scales: { r: { beginAtZero: true } } }
+            });
+        }
+
+        function initArchiveCharts() {
+            const lineCtx = document.getElementById('lineChart').getContext('2d');
+            new Chart(lineCtx, {
+                type: 'line',
+                data: {
+                    labels: ['2025-09-01', '2025-09-10', '2025-09-20'],
+                    datasets: [{
+                        label: '自信度指数',
+                        data: [60, 75, 85],
+                        borderColor: '#ff9500',
+                        tension: 0.1
+                    }]
+                }
+            });
+
+            const radarCtx = document.getElementById('archiveRadarChart').getContext('2d');
+            new Chart(radarCtx, {
+                type: 'radar',
+                data: {
+                    labels: ['语言', '逻辑', '内容', '情绪'],
+                    datasets: [{
+                        label: '首次诊断',
+                        data: [50, 60, 55, 45],
+                        backgroundColor: 'rgba(0, 123, 255, 0.2)',
+                        borderColor: '#007bff'
+                    }, {
+                        label: '当前能力',
+                        data: [80, 85, 90, 75],
+                        backgroundColor: 'rgba(255, 149, 0, 0.2)',
+                        borderColor: '#ff9500'
+                    }]
+                }
+            });
+        }
+
+        async function savePDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const reportContent = document.getElementById('report-content');
+            const canvas = await html2canvas(reportContent);
+            const imgData = canvas.toDataURL('image/png');
+            doc.addImage(imgData, 'PNG', 10, 10, 190, 0);
+            doc.save('communicai-report.pdf');
+        }
+
+        function shareAchievement() {
+            const shareData = {
+                title: 'CommunicAI 报告',
+                text: '我的沟通能力得分85/100！',
+                url: window.location.href
+            };
+            if (navigator.share) {
+                navigator.share(shareData).catch(console.error);
+            } else {
+                navigator.clipboard.writeText(shareData.text).then(() => alert('已复制！'));
+            }
+        }
+
+        // 初始化
+        checkNetwork();
+        initRecognition();
+        loadHistory();
+    </script>
+</body>
+</html>

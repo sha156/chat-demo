@@ -3,28 +3,118 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>音频选择</title>
+    <title>录音和语音转文字</title>
     <style>
         body { font-family: Arial, sans-serif; padding: 20px; }
+        button { margin: 10px; padding: 10px; }
+        #transcript { white-space: pre-wrap; }
     </style>
 </head>
 <body>
-    <h1>选择音频文件</h1>
-    <label for="audioInput">选择音频:</label>
-    <input type="file" id="audioInput" accept="audio/*">
-    <p>选择的音频: <span id="audioName">未选择音频</span></p>
+    <h1>录音和语音转文字示例</h1>
+    
+    <!-- 录音部分 -->
+    <button id="startRecord">开始录音</button>
+    <button id="stopRecord" disabled>停止录音</button>
+    <audio id="audioPlayback" controls></audio>
+    <p>录音状态: <span id="recordStatus">就绪</span></p>
+    
+    <!-- 语音转文字部分 -->
+    <button id="startSTT">开始语音转文字</button>
+    <button id="stopSTT" disabled>停止语音转文字</button>
+    <p>转录文本:</p>
+    <div id="transcript"></div>
 
     <script>
-        document.getElementById('audioInput').addEventListener('change', function(event) {
-            const file = event.target.files[0];
-            if (file) {
-                document.getElementById('audioName').textContent = file.name;
-                // 发送文件名到 App Inventor
-                if (window.AppInventor) {
-                    window.AppInventor.setWebViewString(file.name);
-                }
+        let mediaRecorder;
+        let audioChunks = [];
+        let recognition;
+        const transcriptDiv = document.getElementById('transcript');
+        const recordStatus = document.getElementById('recordStatus');
+
+        // 请求麦克风权限
+        async function requestMic() {
+            try {
+                return await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (err) {
+                alert('麦克风访问失败: ' + err.message);
             }
+        }
+
+        // 录音功能
+        document.getElementById('startRecord').addEventListener('click', async () => {
+            const stream = await requestMic();
+            if (!stream) return;
+
+            mediaRecorder = new MediaRecorder(stream);
+            mediaRecorder.start();
+            audioChunks = [];
+            recordStatus.textContent = '录音中...';
+
+            mediaRecorder.addEventListener('dataavailable', event => {
+                audioChunks.push(event.data);
+            });
+
+            mediaRecorder.addEventListener('stop', () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                const audioUrl = URL.createObjectURL(audioBlob);
+                document.getElementById('audioPlayback').src = audioUrl;
+                recordStatus.textContent = '录音完成';
+                // 可选：发送到 App Inventor
+                if (window.AppInventor) {
+                    window.AppInventor.setWebViewString(audioUrl); // 发送音频 URL 或 base64
+                }
+            });
+
+            document.getElementById('startRecord').disabled = true;
+            document.getElementById('stopRecord').disabled = false;
         });
+
+        document.getElementById('stopRecord').addEventListener('click', () => {
+            mediaRecorder.stop();
+            document.getElementById('startRecord').disabled = false;
+            document.getElementById('stopRecord').disabled = true;
+        });
+
+        // 语音转文字功能（Web Speech API）
+        if ('SpeechRecognition' in window || 'webkitSpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.lang = 'zh-CN'; // 设置为中文
+            recognition.interimResults = true; // 显示中间结果
+            recognition.continuous = true; // 连续识别
+
+            recognition.onresult = event => {
+                let transcript = '';
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    transcript += event.results[i][0].transcript;
+                }
+                transcriptDiv.textContent = transcript;
+                // 可选：发送到 App Inventor
+                if (window.AppInventor) {
+                    window.AppInventor.setWebViewString(transcript);
+                }
+            };
+
+            recognition.onerror = event => {
+                alert('识别错误: ' + event.error);
+            };
+
+            document.getElementById('startSTT').addEventListener('click', async () => {
+                await requestMic(); // 确保权限
+                recognition.start();
+                document.getElementById('startSTT').disabled = true;
+                document.getElementById('stopSTT').disabled = false;
+            });
+
+            document.getElementById('stopSTT').addEventListener('click', () => {
+                recognition.stop();
+                document.getElementById('startSTT').disabled = false;
+                document.getElementById('stopSTT').disabled = true;
+            });
+        } else {
+            alert('浏览器不支持 Web Speech API');
+        }
     </script>
 </body>
-</html>
+</

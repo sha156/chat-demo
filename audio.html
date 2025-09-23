@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件选择示例</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .button { margin: 10px 0; }
+        .file-info { margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h1>选择文件</h1>
+    <div class="button">
+        <label for="imageInput">选择图片:</label>
+        <input type="file" id="imageInput" accept="image/*">
+        <p class="file-info">选择的图片: <span id="imageName">未选择图片</span></p>
+    </div>
+    <div class="button">
+        <label for="audioInput">选择音频:</label>
+        <input type="file" id="audioInput" accept="audio/*">
+        <p class="file-info">选择的音频: <span id="audioName">未选择音频</span></p>
+    </div>
+
+    <script>
+        // 图片选择事件
+        document.getElementById('imageInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('imageName').textContent = file.name;
+                if (typeof Android !== 'undefined') {
+                    Android.onFileSelected('图片', file.name);
+                }
+            }
+        });
+
+        // 音频选择事件
+        document.getElementById('audioInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('audioName').textContent = file.name;
+                if (typeof Android !== 'undefined') {
+                    Android.onFileSelected('音频', file.name);
+                }
+            }
+        });
+    </script>
+</body>
+</html>
